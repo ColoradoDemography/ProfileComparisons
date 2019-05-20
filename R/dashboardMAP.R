@@ -12,61 +12,149 @@
 #' @export
 
 dashboardMAP <- function(DBPool,lvl,listID){
-  # Collecting place ids from  idList, setting default values
-  ctyList <- listID$ctyList
-  ctyfips <- listID$ctyNum
-  ctyname <- listID$ctyName
-  placefips <- listID$plNum
-  placename <- listID$plName
+
+# Setting up colors for leaflet map  counties
+  geCol <- rgb(red = 160, green = 160, blue = 160,max=255)
+  grCol <- rgb(red = 0, green = 102, blue = 0,max=255)
+  blCol <- rgb(red = 0, green = 0, blue = 255,max=255)
+  factpal <- colorFactor(c(geCol,grCol,blCol), c(0,1,2))
+  
+  getColor <- function(indata) {
+    sapply(indata$sel, function(x) {
+      if(x == 0) {
+        "grey"
+      } else if(x == 1) {
+        "green"
+      } else {
+        "blue"
+      } })
+  }  
   
   
-  
-  if(lvl == "Municipalities"){
-  
-    f.muni <- dbGetQuery(DBPool, paste0("SELECT placefp, x, y FROM bounds.place_centroids WHERE  placefp = '",placefips, "';"))
-    
-    f.muni$lat <- as.numeric(f.muni$y)
-    f.muni$long <- as.numeric(f.muni$x)
-  }
-  
-  
-  #Pulls the COunty Outlines
-  
+  # Extracting the county data  
+  # mapcty has the county fips code, the county name and the coordinates of the county center 
   #Accessing JSON file, with Counties 
+  
   data_file <- "www/County_GEN_2014.geojson"
   data_json <- geojson_read(data_file, what = "sp")
   
+  # This returns the centroid of each ploygon (county)  with the proper label
+  centroids <- coordinates(data_json)
   
+  centroids2 <- as.data.frame(SpatialPointsDataFrame(coords=centroids, data=data_json@data))
+  mapcty <- centroids2[,c(3,7,11,12)]
+  names(mapcty) <-c("ctyfips","ctyname","Long","Lat")
   
-  #gj=readOGR(data_json, "OGRGeoJSON", verbose=FALSE)
-  gj=fortify(data_json)
+  # Do different stuff for each type of comparison
+
+  if(lvl == "Regional Summary") {
+    ctyList <-  listID$ctyNum1
+    
+    mapcty$sel <- ifelse(mapcty$ctyfips %in% ctyList,1,0)
+    mapcty$ctyname <- ifelse(mapcty$sel == 1, listID$ctyName1,"")
+    
+    
+    mapctylab <- mapcty[which(mapcty$sel == 1),] %>%
+      group_by(ctyname) %>%
+      summarize(Long = mean(Long),
+                Lat = mean(Lat))
+    
+    
+    
+    # produce leaflet map
+    m <-  leaflet(data_json) %>%
+      addPolygons(color = "black",stroke = TRUE, smoothFactor = 0.2, fillOpacity = 0.5, weight = 1,
+                  fillColor = ~factpal(mapcty$sel))  %>% 
+      addLabelOnlyMarkers(lat = ~ mapctylab$Lat, lng = ~ mapctylab$Long, label = ~ htmlEscape(mapctylab$ctyname),
+                          labelOptions = labelOptions(noHide = T, direction = 'auto'),
+                          options = markerOptions(riseOnHover = TRUE))
+    
+    
+    }
   
-  gj1 <- data.frame()
-  
-  for(i in 1:length(ctyList)) {
-    #Pulls the County to Highlight
-    cty1 <- data_json[which(data_json@data[["COUNTYFP"]] == ctyList[i]),]
-    cty2 <- fortify(cty1)
-    gj1 <- rbind(gj1,cty2)
+  if(lvl == "Region to County") {
+    mapcty$sel <- ifelse(mapcty$ctyfips %in% listID$ctyNum1,1,0)
+    mapcty$sel <- ifelse(mapcty$ctyfips %in% listID$ctyNum2,2,mapcty$sel)
+    
+    # Calculating center of region
+    mapctylab <- mapcty[which(mapcty$sel == 1),] %>%
+      group_by(sel) %>%
+      summarize(Long = mean(Long),
+                Lat = mean(Lat))
+    mapctylab$ctyname <- listID$ctyName1
+    mapctylab$ctyfips <- "000"
+    mapctylab <- mapctylab[,c(5,4,2,3,1)]
+    
+    mapcty2 <- mapcty[which(mapcty$sel == 2),]
+    mapctylab <- bind_rows(mapctylab,mapcty2)
+    
+    # produce leaflet map
+    m <-  leaflet(data_json) %>%
+      addPolygons(color = "black",stroke = TRUE, smoothFactor = 0.2, fillOpacity = 0.5, weight = 1,
+                  fillColor = ~factpal(mapcty$sel))  %>% 
+      addLabelOnlyMarkers(lat = ~ mapctylab$Lat, lng = ~ mapctylab$Long, label = ~ htmlEscape(mapctylab$ctyname),
+                          labelOptions = labelOptions(noHide = T, direction = 'auto'),
+                          options = markerOptions(riseOnHover = TRUE))
+    
   }
   
+  if(lvl == "County to County") {
+    mapcty$sel <- ifelse(mapcty$ctyfips %in% listID$ctyNum1,1,
+                         ifelse(mapcty$ctyfips %in% listID$ctyNum2,2,0))
+    
+    mapctylab <- mapcty[which(mapcty$sel != 0),]
+    
+    # produce leaflet map
+    m <-  leaflet(data_json) %>%
+      addPolygons(color = "black",stroke = TRUE, smoothFactor = 0.2, fillOpacity = 0.5, weight = 1,
+                  fillColor = ~factpal(mapcty$sel))  %>% 
+      addLabelOnlyMarkers(lat = ~ mapctylab$Lat, lng = ~ mapctylab$Long, label = ~ htmlEscape(mapctylab$ctyname),
+                          labelOptions = labelOptions(noHide = T, direction = 'auto'),
+                          options = markerOptions(riseOnHover = TRUE) )
+     }
   
-  m <- ggplot()+
-    geom_map(data=gj, map=gj,
-             aes(x=long, y=lat, map_id=id), 
-             fill=rgb(239,239,239, max=255), color=rgb(92,102,112, max=255), size=.25) +
-    geom_map(data=gj1, map=gj1,
-             aes(x=long, y=lat, map_id=id),
-             fill=rgb(0,149,58, max=255), color=rgb(92,102,112, max=255), size=.25)+
-    coord_map(project="albers", lat0=40, lat1=39) +
-    theme_map()+
-    theme(panel.background=element_rect(fill=rgb(239,239,239, max=255), color=rgb(239,239,239, max=255)),
-          plot.background=element_rect(fill=rgb(239,239,239, max=255), color=rgb(239,239,239, max=255)))
   
-  if(lvl =="Municipalities"){  # Adding point for center of municipality
-    m <- m + geom_point(data=f.muni, aes(x=long, y=lat,shape="16", color="#655003c"),size=2) + 
-      theme(legend.position="none")
-  }
+  if(lvl == "Municipality to Municipality"){
+
+    plfips2 <- unique(c(listID$plNum2,listID$plNum1))
+    
+    f.muni <- data.frame()
+    
+    for(i in 1:length(plfips2)) {
+      muni <- dbGetQuery(DBPool, paste0("SELECT geoid, placefp, name, x, y FROM bounds.place_centroids WHERE  geoid = '",plfips2[i], "';"))
+      muni$sel <- 0
+      if(muni$geoid %in% listID$plNum1){
+        muni$sel <- 1
+      }
+      if(muni$geoid %in% listID$plNum2){
+        muni$sel <- 2
+      }
+      
+      f.muni <- bind_rows(f.muni,muni)
+    }
+    
+    f.muni$Lat <- as.numeric(f.muni$y)
+    f.muni$Long <- as.numeric(f.muni$x)
+   
+    # Build Icoms
+    icons <- awesomeIcons(
+      icon = 'ios-close',
+      iconColor = 'black',
+      library = 'ion',
+      markerColor = getColor(f.muni)
+    )
+    
+    
+    # produce leaflet map
+    m <-  leaflet(data_json) %>%
+      addPolygons(color = "black",stroke = TRUE, smoothFactor = 0.2, fillOpacity = 0.5, weight = 1,
+                  fillColor = geCol)  %>% 
+      addAwesomeMarkers(lng = ~ f.muni$Long, lat = ~ f.muni$Lat, label = ~ htmlEscape(f.muni$name),
+                 icon = icons, 
+                 labelOptions = labelOptions(noHide = T, direction = 'auto'),
+                 options = markerOptions(riseOnHover = TRUE))
+  }  
+  
   
   return(m)
 }

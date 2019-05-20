@@ -8,6 +8,15 @@
 #' @export
 
 downloadObj <- function(input, output, session, place, oname, dobj) {
+
+  if(nchar(oname) == 7) {
+    dname <- substr(oname,1,3)
+    dtype <- substr(oname,4,7)
+  }
+  if(nchar(oname) == 8) {
+    dname <- substr(oname,1,4)
+    dtype <- substr(oname,5,8)
+  }
   if(nchar(oname) == 9) {
     dname <- substr(oname,1,5)
     dtype <- substr(oname,6,9)
@@ -20,6 +29,9 @@ downloadObj <- function(input, output, session, place, oname, dobj) {
 
 
   prefix <- switch(dname,
+                   "cty" = "County Ranking",
+                   "muni" = "Municipal Ranking",
+                   
                    "stats" = " Basic Statistics",
                    "popf1" = " Pop Growth Comparison",
                    "popf2" = " Pop Growth",
@@ -65,7 +77,7 @@ downloadObj <- function(input, output, session, place, oname, dobj) {
 
   output$download <-  downloadHandler(
     filename = function() {
-      paste0(place,prefix,suffix)
+        paste0(place,prefix,suffix)
     },
     content = function(file) {
       if(suffix == " Data.csv") {
@@ -73,10 +85,12 @@ downloadObj <- function(input, output, session, place, oname, dobj) {
       }
       if(suffix == " Plot.png") {
         ggsave(file, plot = dobj, width =8, height=6, units	="in", device = "png")
+        
       }
       if(suffix == " Table.docx") {
-        doc <- read_docx()
-        doc <- body_add_flextable(doc, value = dobj)
+        doc <- read_docx() %>%
+               body_add_flextable(value = dobj) %>%
+               body_end_section_landscape() 
         print(doc, target = file)
       }
     } #content
