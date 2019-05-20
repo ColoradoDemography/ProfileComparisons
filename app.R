@@ -1,7 +1,8 @@
-#' Colorado Demographic Profiles
-#' @author  Adam Bickford, Colorado State Demography Office, November 2017-March 2018
-#' Release Version 2.0 10/31/2018
+#' Colorado Demographic Profiles Comparison Tool
+#' @author  Adam Bickford, Colorado State Demography Office, March 2018 -November 2019
+#' Release Version 1.0 4/1/2019
 
+# setwd("J:/Community Profiles/Shiny Demos/Comparisons")
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
 library(readr)
@@ -20,6 +21,7 @@ library(shinyjs, quietly=TRUE)
 library(eulerr)
 library(rgdal)
 library(geojsonio)
+library(units)
 library(grid)
 library(gridExtra)
 library(ggthemes)
@@ -27,6 +29,16 @@ library(maptools)
 library(officer)
 library(flextable)
 library(ggplotify)
+library(ggrepel)  # These are the new packages
+library(leaflet)
+library(htmltools)
+library(mapview)
+library(DT)
+library(WeightedCluster)
+library(data.tree)
+library(circlepackeR)
+library(htmlwidgets)
+library(manipulateWidget)
 
 
 # Additions for Database pool
@@ -35,7 +47,7 @@ library('DBI')
 library('stringr')
 library('config')
 
-
+source("R/CountyRank.R")
 source("R/ageForecastPRO.R")
 source("R/agePlotPRO.R")
 source("R/baseIndustries.R")
@@ -75,6 +87,7 @@ source("R/setAxis.R")
 source("R/setYrRange.R")
 source("R/simpleCap.R")
 source("R/statsTable1.R")
+
 source("R/submitPush.R")
 source("R/submitReport.R")
 source("R/tabList.R")
@@ -84,20 +97,19 @@ source("R/weeklyWages.R")
 source("R/unemployment.R")
 
 
-
 # The GLOBAL Variables  Add Additional lists items as sections get defined
 #File Locations ALSO LOOK AT LINE IN THE PDF OUTPUT CODE  LINE 1229
 # Local/Development
 # tPath <- "J:/Community Profiles/Shiny Demos/TempDir"  #Development
 
 #Production
- tPath <- "/tmp"  
+# tPath <- "/tmp"  
 
 # Locations for Google Analtyics Java Script Files
 # Local/ Development
 
-# initJS <- "J:/Community Profiles/Shiny Demos/codemogLib/www/dL_init.js"
-# tagManJS <- "J:/Community Profiles/Shiny Demos/codemogLib/www/tag_manager.js"
+# initJS <- "J:/Community Profiles/Shiny Demos/comparisons/www/dL_init.js"
+# tagManJS <- "J:/Community Profiles/Shiny Demos/Comparisons/www/tag_manager.js"
 
 #Production
  initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
@@ -135,6 +147,9 @@ fixPath <- function(inPath){
   outPath <-gsub("\\\\","/",outPath)
   return(outPath)
 }
+
+#CountyRanlinr
+ctyRank.list <<- list()
 
 #Basic Statistics
 stats.list <<- list()
@@ -191,41 +206,21 @@ popem.list <<- list()
 # Structure of user Interface
 ui <-
   dashboardPage( skin="green", 
-                 title= "Colorado Demographic Profiles",
-                 dashboardHeader(title = span(img(src="ShieldOnly_LRG.png", height = 70, align = "top"),"Colorado Demographic Profiles"), titleWidth=550), #dashboardHeader
+                 title= "Colorado Demographic Profiles Comparisons",
+                 dashboardHeader(title = span(img(src="ShieldOnly_LRG.png", height = 70, align = "top"),"Colorado Demographic Profiles Comparisons"), titleWidth=550), #dashboardHeader
                  dashboardSidebar( width = 300,  useShinyjs(),
                                    # data level Drop down
-                                   selectInput("level", "Select Data Level" ,
-                                               choices=c("Select a Data Level","Counties","Municipalities")  #Enabled in V1
+                                   selectInput("level", "Select Comparison Type" ,
+                                               choices=c("Select a Comparison Type","County Ranking","Regional Summary","Region to County","County to County","Municipality to Municipality")  #Enabled in V1; Need to add 'Municipal Ranking'
                                    ),
-                                   
-                                   # profile Unit dropdown
-                                   selectInput("unit", "Select Location" ,choices=""),
-                                   # Comparison dropdown 1  Disabled in V1
-                                   #   selectizeInput("comp", "Select Comparison" ,choices=""),
-                                   #   # Comparison dropdown 2
-                                   #    selectizeInput("comp2","Select Custom Comparisons",choices ="", multiple=TRUE),  Disabled in V1
-                                   #Output Content Checkboxes
-                                   checkboxGroupInput("outChk", "Select the Data Elements to display:",
-                                                      choices = c("Basic Statistics" = "stats",
-                                                                  "Population Trends" = "popf",
-                                                                  "Population Characteristics: Age" = "pop",
-                                                                  "Population Characteristics: Income, Education and Race"= "popc",
-                                                                  "Housing and Households" = "housing",
-                                                                  "Commuting and Job Growth" = "comm",
-                                                                  "Employment by Industry"="emplind",
-                                                                  "Employment Forecast and Wage Information"="emply"
-                                                      ),
-                                                      selected =  c("stats","popf","pop","popc",
-                                                                    "housing","comm", "emplind","emply")
-                                   ),
-                                   
+                                   selectInput("base", "Select Reference Location" ,choices="", multiple=FALSE),
+                                   selectInput("comp","Select Comparison Location(s)" ,choices="Select Items",multiple=TRUE),
+                                   checkboxGroupInput("outChk", label=NULL,
+                                                      choices = NULL),
                                    #Action Button
                                    actionButton("profile","View Profile"),
-                                   #   actionButton("comparison","View Comparison"),  Disabled in V1
-                                   actionButton("contact","Contact SDO",onclick ="window.open('https://goo.gl/forms/xvyxzq6DGD46rMo42', '_blank')"),
-                                   downloadButton("outputPDF", label="Download PDF Report",
-                                                  style="color: black; background-color: gray90; border-color: black")
+                                   actionButton("contact","Contact SDO",onclick ="window.open('https://goo.gl/forms/xvyxzq6DGD46rMo42', '_blank')")
+                                   
                                    
                                    
                                    
@@ -235,7 +230,7 @@ ui <-
                    includeScript(initJS),
                    includeScript(tagManJS), #writes GTM connection
                    tags$link(rel = "stylesheet", type = "text/css", href = "dashboard.css"),  #Link to CSS...
-                   tags$title("Colorado Demographic Profiles") #,
+                   tags$title("Colorado Demographic Profiles Comparisons") #,
                    # includeScript("www/dataL.js") # This is the linkage to the dataLayer Output code
                  ),
                  tags$body(includeHTML("www/tag_body.js")),  # for non-JS instances
@@ -261,7 +256,7 @@ ui <-
 
 # Server Management Function
 server <- function(input, output, session) {
-  
+ 
   infoSrc <- matrix(" ",nrow=8,ncol=2)
   infoSrc[1,1] <- "<b>Basic Statistics</b>"
   infoSrc[1,2] <- "Summary Table and Map"
@@ -330,7 +325,7 @@ server <- function(input, output, session) {
   linkTab <- gsub("&lt;","<",linkTab)
   linkTab <- gsub("&gt;",">",linkTab)
   
-  frontPgBox1 <- box(width=11,tags$div(tags$b("Welcome to the State Demography Office (SDO) Colorado Demographic Profiles Website"), tags$br(),
+  frontPgBox1 <- box(width=11,tags$div(tags$b("Welcome to the State Demography Office (SDO) Colorado Demographic Profiles Comparisons Website"), tags$br(),
                                        "This tool provides summary plots and data describing Counties and Incorporated Municipalities in Colorado.", tags$br(),
                                        tags$em("Profile Contents:"),
                                        HTML(infoTab),
@@ -356,60 +351,126 @@ server <- function(input, output, session) {
     HTML(linkTab)))
   
   frontPg <- list(frontPgBox1,frontPgBox2)
-  shinyjs::hide("outputPDF")
   
-  output$ui <- renderUI(frontPg)
+ # output$ui <- renderUI(frontPg)
+
   # updates Dropdown boxes and selects data level and unit
   LocList <- popPlace(DOLAPool,curYr)
   CountyList <- LocList$Counties
   PlaceList <- LocList$Munis
-  
+  RegionList <- LocList$Region
   
   observeEvent(input$level, ({
-    shinyjs::hide("outputPDF")
     
-    #clears the comp2 dropdown on change
-    updateSelectInput(session, "comp2", choices = "")
-    if(input$level == "Select a Data Level") { #the initial state of the dropdowns
-      outUnit <- ""
+    if(input$level == "Select Comparison Type") { #the initial state of the dropdowns
+      outBase <- ""
       outComp <- ""
     }
-    
-    if(input$level == "Counties") {
-      outUnit <- unique(as.list(CountyList[,3]))
+    if(input$level == "County Ranking") {  # Added 9/18
+      shinyjs::hide("base")
+      shinyjs::hide("comp")
+      updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements for table:",
+                               choices = c("Total Population" = "totpop",
+                                           "Average Annual Population Growth Rate" ="popgr",
+                                           "Percentage of Population Age 25 to 64" = "pop2564",
+                                           "Percentage of Population Age 65 and Older" = "pop65",
+                                           "Percentage of Non-White Persons" = "pctNW",
+                                           "Percentage of Persons with a Bachelor's Degree or Higher" = "educ",
+                                           "Total Estimated Jobs"= "jobs",
+                                           "Median Household Income"="medinc",
+                                           "Percent of Persons Below the Poverty Line" = "poverty"),
+                               selected =  c("totpop","popgr","pop2564","pop65",
+                                             "pctNW","educ","jobs","medinc","poverty"))
     }
-    if(input$level == "Municipalities") {  
-      outUnit <- unique(as.list(PlaceList[,3]))
+    if(input$level == "Municipal Ranking") {  # Added 9/18
+      outBase <-  RegionList
+      updateSelectInput(session, "base", choices = outBase)
+      shinyjs::hide("comp")
+      updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
+                               choices = c("Total Population" = "totpop",
+                                           "Average Annual Population Growth Rate" ="popgr",
+                                           "Population Age 25 to 64" = "pop2564",
+                                           "Population Age 65 and Older" = "pop65",
+                                           "Percentage of Non-White Persons" = "pctNW",
+                                           "Percentage of Persons with a Bachelor's Degree or Higher" = "educ",
+                                           "Number of Housing Units"= "mhi",
+                                           "Median Household Income"="medIncome",
+                                           "Percent of Persons Below the Poverty Line" = "poverty"),
+                               selected =  c("totpop","popgr","pop2564","pop65",
+                                             "pctNW","educ","mhi","medIncome","poverty"))
     }
     
-    updateSelectInput(session, "unit", choices = outUnit)
+    if(input$level == "Regional Summary") {  # Added 9/18
+       outBase <-  RegionList
+       updateSelectInput(session, "base", choices = outBase)
+       shinyjs::hide("comp")
+       updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
+                                choices = c("Basic Statistics" = "stats",
+                                           "Population Trends" = "popf",
+                                            "Population Characteristics: Age" = "pop",
+                                            "Population Characteristics: Income, Education and Race"= "popc",
+                                            "Housing and Households" = "housing",
+                                            "Employment by Industry"="emplind",
+                                            "Employment Forecast and Wage Information"="emply"),
+                                
+                         # selected =  c("stats","popf","pop","popc",
+                         #               "housing","emplind","emply")
+                          selected =  "stats")
+    }
+    if(input$level == "Region to County") {
+      shinyjs::show("comp")
+      outBase <- RegionList
+      outComp <- unique(as.list(CountyList[,3]))
+      updateSelectInput(session, "base", choices = outBase)
+      updateSelectizeInput(session, "comp", choices = outComp)
+      updateCheckboxGroupInput(session,"outChk", "Select the Data Elements to display:",
+                               choices = c("Basic Statistics" = "stats",
+                                           "Population Trends" = "popf",
+                                           "Population Characteristics: Age" = "pop",
+                                           "Population Characteristics: Income, Education and Race"= "popc",
+                                           "Housing and Households" = "housing"),
+                               # selected =  c("stats","popf","pop","popc", "housing"))
+                               selected =  "stats")
+    }
+    if(input$level == "County to County") {
+      shinyjs::show("comp")
+      outBase <- unique(as.list(CountyList[,3]))
+      outComp <- unique(as.list(CountyList[,3]))
+      updateSelectInput(session, "base", choices = outBase)
+      updateSelectizeInput(session, "comp", choices = outComp)
+      updateCheckboxGroupInput(session,"outChk", "Select the Data Elements to display:",
+                               choices = c("Basic Statistics" = "stats",
+                                           "Population Trends" = "popf",
+                                           "Population Characteristics: Age" = "pop",
+                                           "Population Characteristics: Income, Education and Race"= "popc",
+                                           "Housing and Households" = "housing",
+                                           "Employment by Industry"="emplind",
+                                           "Employment Forecast and Wage Information"="emply"),
+                                selected =  "stats")
+    }
+    if(input$level == "Municipality to Municipality") {
+      shinyjs::show("comp")
+      outBase <- unique(as.list(PlaceList[,3]))
+      outComp <- unique(as.list(PlaceList[,3]))
+      updateSelectInput(session, "base", choices = outBase)
+      updateSelectizeInput(session, "comp", choices = outComp)
+      updateCheckboxGroupInput(session,"outChk", "Select the Data Elements to display:",
+                               choices = c("Basic Statistics" = "stats",
+                                           "Population Trends" = "popf",
+                                           "Population Characteristics: Age" = "pop",
+                                           "Population Characteristics: Income, Education and Race"= "popc",
+                                           "Housing and Households" = "housing"),
+                                selected =  "stats")
+    }
   }))  #observeEvent input$level
   
   # Event for Comparison selection
   observeEvent(input$comp, {
-    shinyjs::hide("outputPDF")
     
   }) #observeEvent input$comp
   
   # Event for click on profile button
   observeEvent(input$profile,  {
- 
-    shinyjs::hide("outputPDF")
-    
-    #Creating output file location and Prepping Matrix of filenames
-  
-   
-    
-    tName <- ""
-    tmpName <- sample(c(0:9, LETTERS),8, replace=TRUE)
-    for(i in 1:8) {
-      tName <- paste0(tName,tmpName[i])
-    }
-    
-    fullDir <- file.path(tPath,tName)
-    tDir <- dir.create(fullDir) #Setting Temporary Directory location for Reporting
-  
-    fileMat <- TempFil(fullDir)   
     
 
     dLout <- submitPush(input$level,input$unit,input$outChk)  # Generate dataLayer Command
@@ -417,21 +478,71 @@ server <- function(input, output, session) {
     
     outputList <<- list()
     output$ui <- renderUI(outputList)
-    
+  
     #creating the input FIPS list to generate data
-    if(input$unit == "") {
-      lnError <- tags$h2("Please specify a Data Level and a Profile to display")
+    if(input$level == "Select Comparison Type") {
+      lnError <- tags$h2("Please specify a Comparison Type")
       outputList <<- list(lnError)
     }  else {
       withProgress(message = 'Generating Profile', value = 0, {  # Initialize Progress bar
         #Building fipslist
-        if(input$level == "Counties") {
-          fipslist <<- listTofips(CountyList,input$level,input$unit)
-          placeName <- simpleCap(input$unit)
+        if(input$level == "County Ranking")  {
+          placeName <- input$level
+          fipslist <<- ""
+          }
+          if(input$level == "Municipal Ranking") {
+              placeName <- input$level 
+              fipslist <<- ""
+          }
+        
+        if(input$level == "Regional Summary") {
+          fipslist <<- listTofips(lvl=input$level,inlist1=RegionList,value1=input$base,inlist2="",value2="")
+          placeName <- fipslist$plName1
         } 
-        if(input$level == "Municipalities") { 
-          fipslist <<- listTofips(PlaceList,input$level,input$unit)
-          placeName <- simpleCap(input$unit)
+        if(input$level == "Region to County") { 
+          fipslist <<- listTofips(lvl=input$level,inlist1=RegionList,value1=input$base,inlist2=CountyList,value2=input$comp)
+          if(fipslist$length2 == 1){
+            pl <- fipslist$plName2[1]
+          } else {
+            for(i in 1:fipslist$length2){
+            if(i == 1) {
+              pl <- fipslist$plName2[i] 
+            } else {
+              pl <- paste0(pl,", ",fipslist$plName2[i])
+            }
+          }
+          }
+          placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+        }
+        if(input$level == "County to County") {  
+          fipslist <<- listTofips(lvl=input$level,inlist1=CountyList,value1=input$base,inlist2=CountyList,value2=input$comp)
+          if(fipslist$length2 == 1){
+            pl <- fipslist$plName2[1]
+          } else {
+            for(i in 1:fipslist$length2){
+              if(i == 1) {
+                pl <- fipslist$plName2[1] 
+              } else {
+                pl <- paste0(pl,", ",fipslist$plName2[i])
+              }
+          }
+          }
+          placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+        }
+        if(input$level == "Municipality to Municipality") {  
+          fipslist <<- listTofips(lvl=input$level,inlist1=PlaceList,value1=input$base,inlist2=PlaceList,value2=input$comp)
+          if(fipslist$length2 == 1){
+            pl <- fipslist$plName2[1]
+          } else {
+            for(i in 1:fipslist$length2){
+              if(i == 1) {
+                pl <- fipslist$plName2[1] 
+              } else {
+                pl <- paste0(pl,", ",fipslist$plName2[i])
+              }
+          }
+          }
+          placeName <- paste0(fipslist$plName1," Compared to: ",pl)
         }
         
         #Generate profile UI objects
@@ -439,44 +550,85 @@ server <- function(input, output, session) {
         svals <- reactiveValues(a=NULL,b=NULL,c=NULL)
         
         ln1 <- tags$h1(placeName)
+        
+        
+        
         #creating ids and output flags for multiple counties and small places
-        idList <- chkID(lvl=input$level,fipslist= fipslist,plName=placeName,ctyList=CountyList, plList=PlaceList)
+         idList <- chkID(lvl=input$level,fipslist= fipslist)
+        # Ranking output
+        if(input$level == "County Ranking") {
+
+          CountyRank <- CountyRank(DBPool = DOLAPool, CtyList = CountyList, chkList = input$outChk, eYr = curYr, ACS=curACS) 
+           
+          CirPack <- circlepackeR(CountyRank$outtree, size = "r", color_min = "hsl(56,80%,80%)", 
+                                   color_max = "hsl(341,30%,40%)")
+          
+          CtyTab <- CountyRank$data
+          output$CtyTabOut <- DT::renderDataTable(CtyTab,
+                           options = list(pageLength = 8,
+                                          autowidth= TRUE,
+                                          scrollX = TRUE,
+                                          scrollY = TRUE,
+                                          caption = "County Rankings.  Click on header to Sort"),rownames = FALSE)
+          
+          CtyRank.info <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tabin each display box.",tags$br(),
+                                 tags$br(),
+                                 "General information is available here:", tags$br(),
+                                 tags$ul(
+                                   tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
+                                   tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
+                                           tags$br(),tags$br(),downloadObjUI("ctydata")
+                                   )))
+          
+          CtyRank.box0 <- box(width=12,ln1)
+          CtyRank.box1 <- box(width=3, height=350,renderCirclepackeR(CirPack))
+          CtyRank.box2 <- tabBox(width=9, height=450,
+                               tabPanel("Table",DT::dataTableOutput("CtyTabOut")),
+                               tabPanel("Information",CtyRank.info))
+                               
+          
+          
+          
+          #building List
+          CtyRank.list <<- list(CtyRank.box0, CtyRank.box1, CtyRank.box2)
+          
+          incProgress()
+        }
+      
         
         #stats; Basic Statistics
         if("stats" %in% input$outChk) {
           stats.text <- tags$h2("Basic Statistics")
           stat_List <- statsTable1(DBPool=DOLAPool,lvl=input$level,listID=idList,sYr=2010,eYr=curYr,ACS=curACS)
           stat_map <- dashboardMAP(DBPool=DOLAPool,lvl=input$level,listID=idList)
-          # creating output files
-          #HTML table
-          dput(stat_List$Htable,fileMat[1])
-          
-          #Latex File
-          dput(stat_List$Ltable, fileMat[2])
-          
-          #Plain Text
-          dput(stat_List$text,fileMat[3])
           
           #Images
-          ggsave(fileMat[4],stat_map, device="png", height = 4 , width = 6, dpi=300)
-          ggsave(fileMat[5],stat_map, device="png", height = 4 , width = 6, dpi=300)
+          output$statMap <- renderLeaflet({stat_map})
           
-          img_List1 <- list(src = fileMat[4], contentType = 'image/png', width = 400, height = 300)
+          Stats.map <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tab in each display box.",tags$br(),
+                                  tags$br(),
+                                 "General information is available here:", tags$br(),
+                                 tags$ul(
+                                   tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
+                                   tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
+                                           tags$br(),tags$br(),downloadObjUI("statsplot")
+                                   )))
           
-          Stats.info <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tab in each display box.",tags$br(),
-                                 "Note: County data is displayed for municipalities and places with fewer than 200 people.",tags$br(), tags$br(),
+          Stats.info <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tabin each display box.",tags$br(),
+                                  tags$br(),
                                  "General information is available here:", tags$br(),
                                  tags$ul(
                                    tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
                                    tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
                                            tags$br(),tags$br(),downloadObjUI("statstabl")
                                    )))
-          
+  
           stats.box0 <- box(width=12,ln1)
-          stats.box1 <- tabBox(width=8, height=350,
-                               tabPanel("Table",tags$div(class="Row1Tab",HTML(dget(fileMat[1])))),
+          stats.box1 <- box(width=5, height=400,leafletOutput("statMap"))
+          stats.box2 <- tabBox(width=12, height=350,
+                               tabPanel("Table",tags$div(class="Row1Tab",HTML(stat_List$Htable))),
                                tabPanel("Information",Stats.info))
-          stats.box2 <- box(width=4, height=350,renderImage({img_List1}))
+          
           
           
           #building List
@@ -491,7 +643,7 @@ server <- function(input, output, session) {
           #Chart/Table Objects
           popf1 <<- popTable(DBPool=DOLAPool,lvl=input$level,listID=idList,sYr=1990,eYr=curYr)
           popf2 <<- pop_timeseries(DBPool=DOLAPool,lvl=input$level,listID=idList,endyear=curYr,base=12)
-          popf3 <<- popForecast(listID=idList)
+          popf3 <<- popForecast(lvl=input$level,listID=idList)
           popf4 <<- cocPlot(DBPool=DOLAPool,lvl=input$level,listID=idList,lyr=curYr)
           
           # creating output files
@@ -522,7 +674,7 @@ server <- function(input, output, session) {
           
           
           #infobox Objects
-          if(input$level == "Counties") {
+          if(input$level == "Counties" || input$level == "Region") {
             popf1.info <- tags$div(boxContent(title= "Population Growth Estimates",
                                               description = "The Population Growth Table compares population growth for a place to the State.",
                                               MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
@@ -600,10 +752,10 @@ server <- function(input, output, session) {
         if("pop" %in% input$outChk){
           #Generate tables, plots and text...
           
-          popa1 <<- agePlotPRO(listID=idList, ACS=curACS, yrs=curYr)
-          popa2 <<- medianAgeTab(listID=idList, ACS=curACS)
-          popa3 <<- ageForecastPRO(listID=idList,sYr=2010,mYr=2015,eYr=2025,base=12)
-          popa4 <<- migbyagePRO(DBPool=DOLAPool,listID=idList)
+          popa1 <<- agePlotPRO(lvl=input$level,listID=idList, ACS=curACS, yrs=curYr)
+          popa2 <<- medianAgeTab(lvl=input$level,listID=idList, ACS=curACS)
+          popa3 <<- ageForecastPRO(lvl=input$level,listID=idList,sYr=2010,mYr=2015,eYr=2025,base=12)
+          popa4 <<- migbyagePRO(DBPool=DOLAPool,lvl=input$level,listID=idList)
           
           ggsave(fileMat[17],popa1$plot, device="png", height = 5 , width = 7, dpi=300)
           ggsave(fileMat[18],popa1$plot, device="png", height = 5 , width = 7, dpi=300)
@@ -932,7 +1084,7 @@ server <- function(input, output, session) {
                                  tags$br(),
                                  downloadObjUI("popt1plot"))
           
-          popt2.info <- tags$div(boxContent(title= "Commuting Table",
+          popt2.info <- tags$div(boxContent(title= "Work Outside Table",
                                             description= "The work outside table shows the top ten work locations for prople living in an area but working somewhere else.",
                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
                                             urlList = list(c("U.s. Census Bureau On the Map Data","https://onthemap.ces.census.gov/")) ),
@@ -940,7 +1092,7 @@ server <- function(input, output, session) {
                                  downloadObjUI("popt2tabl"),downloadObjUI("popt2data"))
           
           
-          popt3.info <- tags$div(boxContent(title= "Commuting Table",
+          popt3.info <- tags$div(boxContent(title= "Live Outside Table",
                                             description= "The live outside table shows the top ten residential locations for people working in an area but living somewhere else.",
                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
                                             urlList = list(c("U.s. Census Bureau On the Map Data","https://onthemap.ces.census.gov/")) ),
@@ -961,10 +1113,10 @@ server <- function(input, output, session) {
                               tabPanel("Plot",renderImage({img_List12})),
                               tabPanel("Sources and Downloads",popt1.info))
           popt2.box <- tabBox(width=6, height=400,
-                              tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[59])))),
+                              tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[57])))),
                               tabPanel("Sources and Downloads",popt3.info))
           popt3.box <- tabBox(width=6, height=400,
-                              tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[57])))),
+                              tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[59])))),
                               tabPanel("Sources and Downloads",popt2.info))
           popt4.box <- tabBox(width=6, height=400,
                               tabPanel("Plot",renderImage({img_List13})),
@@ -1167,59 +1319,67 @@ server <- function(input, output, session) {
         
         
         incProgress()       
-        shinyjs::show("outputPDF") 
+        
       }) #Progress Bar
     }#if input$unit == ""
     
     # Output UI...
     
-    if(length(outputList) == 0) {
-      tabs <- lapply(1:length(input$outChk), function(i) {  # this determines the number of tabs needed
-        id <- paste0("tab", i)
-        tabPanel(
-          title = tabTitle(input$outChk[[i]]), tabList(input$outChk[[i]])
-        ) # TabPanel
-      })
-    }  else {
-      tabs <- outputList
-    }
+   if(input$level == "County Ranking") {
+     tabs <- CtyRank.list
+   } else {
+     if(length(outputList) == 0) {
+       tabs <- lapply(1:length(input$outChk), function(i) {  # this determines the number of tabs needed
+         id <- paste0("tab", i)
+         tabPanel(
+           title = tabTitle(input$outChk[[i]]), tabList(input$outChk[[i]])
+         ) # TabPanel
+       })
+     }  else {
+       tabs <- outputList
+     }
+   }
+
     output$ui  <- renderUI({ do.call(tabsetPanel, tabs) }) #renderUI
     
     #Event to output PDF documents
     
-    output$outputPDF <- downloadHandler(
+ #   output$outputPDF <- downloadHandler(
       
-      filename <- function() {
-        paste0(input$unit," Community Profile Report ",as.character(Sys.Date()),".pdf")
-      },
-      content <- function(file) {
-        #Generate Report
-        #knitting file and copy to final document
+ #     filename <- function() {
+ #       paste0(input$unit," Community Profile Report ",as.character(Sys.Date()),".pdf")
+ #     },
+ #     content <- function(file) {
+ #Generate Report
+ #knitting file and copy to final document
         
-    #    tempRMD <- fixPath(fileMat[88])  #Testing
-    #    tempPDF <- fixPath(fileMat[89]) 
+ #       tempRMD <- fixPath(fileMat[88])  #Testing
+ #       tempPDF <- fixPath(fileMat[89]) 
         
-         tempRMD <- fileMat[88]  
-         tempPDF <- fileMat[89] 
+ #     tempRMD <- fileMat[88]  
+ #     tempPDF <- fileMat[89] 
         
         
-        rmarkdown::render(input= tempRMD, output_file = tempPDF,
-                          params =  list(outChk = input$outChk,
-                                         olistID = idList,
-                                         olevel = input$level,
-                                         filemat = fileMat),
-                          run_pandoc = TRUE)
+#        rmarkdown::render(input= tempRMD, output_file = tempPDF,
+#                         params =  list(outChk = input$outChk,
+#                                         olistID = idList,
+#                                         olevel = input$level,
+#                                         filemat = fileMat),
+#                          run_pandoc = TRUE)
         
-        file.rename(tempPDF, file) # move pdf to file for downloading
-      } #Content
-    ) #Download Handler
+#        file.rename(tempPDF, file) # move pdf to file for downloading
+#      } #Content
+#    ) #Download Handler
     
     
     
     #Event to outload plots and data files
+    #CountyRank
+    callModule(downloadObj, id = "ctydata", "", "ctydata", CountyRank$data)
     
     #Basic Statistics
-    callModule(downloadObj, id = "statstabl", simpleCap(input$unit), "statstabl", stat_List$FlexTable)
+    callModule(downloadObj, id = "statstabl", simpleCap(placeName), "statstabl", stat_List$FlexTable)
+    callModule(downloadObj, id = "statsplot", simpleCap(placeName), "statsplot", stat_map)
     
     #Population Forecast
     
