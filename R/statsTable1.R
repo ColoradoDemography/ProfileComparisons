@@ -559,7 +559,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
     }
   }
   
- #Row Labels 
+ #column Labels 
   outTab[1,1] <- paste0("Population (",eYr,")",footnote_marker_symbol(1))
   outTab[2,1] <- paste0("Population Change (",sYr," to ",eYr, ")",footnote_marker_symbol(1))
   outTab[3,1] <- paste0("Total Employment (",eYr,")",footnote_marker_symbol(1))
@@ -594,7 +594,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
     align_spec <- c('l',rep('r',Nvars))
   } 
   
- 
+
   #Generating HTMl File, kable Table
   outHTML <-  kable(outTab, format='html', table.attr='class="cleanTab"',
                     digits=1,
@@ -604,9 +604,11 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
                     caption="Community Quick Facts",
                     escape = FALSE)   %>%
     kable_styling() %>%
+    add_header_above(header_span)  %>%
     column_spec(1, width = "4in") %>%
-    add_header_above(header_span)  #%>%
-   # footnote(symbol= c("Source: State Demography Office",captionSrc("ACS",ACS)), footnote_as_chunk = T) 
+    add_footnote(c("Source: State Demography Office",captionSrc("ACS",ACS)), notation = "symbol") 
+  # footnote(symbol= c("Source: State Demography Office",captionSrc("ACS",ACS)),threeparttable = T) 
+  
 
   #Generate Flextable
   outTab <- gsub("<sup>"," ",outTab)
@@ -671,21 +673,13 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
              add_footer_row(, values="* State Demography Office",  colwidths = ncol(f.Flex)) %>%
              autofit() %>%
              align(i=1:2, align="center", part="header") %>%
-             align(j=1,align="left", part="body")
+             align(j=1,align="left", part="body") %>%
+             width(j=1, width = 3) %>%
+             width(j=2:(ncol(f.Flex)-1),width = 1)
   
  
- #Row Labels for Latex table
- outTab[1,1] <- paste0("Population (",eYr,")",footnote_marker_symbol(1,"latex"))
- outTab[2,1] <- paste0("Population Change (",sYr," to ",eYr, ")",footnote_marker_symbol(1,"latex"))
- outTab[3,1] <- paste0("Total Employment (",eYr,")",footnote_marker_symbol(1,"latex"))
- outTab[4,1] <- paste0("Median Household Income",footnote_marker_symbol(2,"latex"))
- outTab[5,1] <- paste0("Median House Value",footnote_marker_symbol(2,"latex"))
- outTab[6,1] <- paste0("Percentage of Population with Incomes lower than the Poverty Line",footnote_marker_symbol(2,"latex"))
- outTab[7,1] <- paste0("Percentage of Population Born in Colorado",footnote_marker_symbol(2,"latex"))
- 
-  
 
-  names(f.Flex) <- names_spaced
+
       
   
   outList <- list("Htable" = outHTML, "FlexTable" = FlexOut, "data"=f.Flex)
