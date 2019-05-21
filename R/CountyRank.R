@@ -335,7 +335,6 @@ popnamesend <- colName2[2:length(colName2)]
 colName2 <- c(popnames1,popnames2,popnamesend)
 
 
- browser()
 names(f.ctyTab) <-  names(colName2)
 f.ctyTab <- f.ctyTab[,c(1,2,ncol(f.ctyTab),3:(ncol(f.ctyTab)-1))]
 
