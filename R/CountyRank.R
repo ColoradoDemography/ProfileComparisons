@@ -135,11 +135,8 @@ CountyRank <- function(DBPool, CtyList, chkList, eYr, ACS) {
     names(d13cty)[3] <- "countyfips"
     
     f.educVal <- d13cty %>% group_by(countyfips) %>%
-      summarise(total = b15003001+b15003002+b15003003 + b15003004 + b15003005+b15003006 +
-                  b15003007+b15003008+b15003009 + b15003010 + b15003023+b15003011 +
-                  b15003012+b15003013+b15003014 + b15003015 + b15003016+b15003017 + b15003018 +
-                  b15003019+b15003020+b15003021 + b15003022 + b15003023+b15003024+b15003025,
-                baplus = b15003019+b15003020+b15003021 + b15003022 + b15003023+b15003024+b15003025) %>%
+      summarise(total = b15003001,
+                baplus =  b15003022 + b15003023+b15003024+b15003025) %>%
       mutate(bapct = baplus/total)
     
     f.ctyfull <- inner_join(f.ctyfull, f.educVal[,c(1,4)], by="countyfips")
