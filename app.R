@@ -2,7 +2,9 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2018 -November 2019
 #' Release Version 1.0 4/1/2019
 
-# setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+ setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+ 
+# devtools::install_github("jeromefroe/circlepackeR")
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
 library(readr)
@@ -38,7 +40,7 @@ library(WeightedCluster)
 library(data.tree)
 library(circlepackeR)
 library(htmlwidgets)
-library(manipulateWidget)
+
 
 
 # Additions for Database pool
@@ -112,8 +114,8 @@ source("R/unemployment.R")
 # tagManJS <- "J:/Community Profiles/Shiny Demos/Comparisons/www/tag_manager.js"
 
 #Production
- initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
- tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
+# initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
+# tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
 
 # Current ACS database
 curACS <- "acs1317"
@@ -227,8 +229,8 @@ ui <-
                  ), #dashboardSidebar
                  dashboardBody(  tags$head( 
                    tags$meta(name="keywords", content="Colorado, demographic, county, community, municiplaity, city, population, housing, household, age, median income, jobs, wages"),
-                   includeScript(initJS),
-                   includeScript(tagManJS), #writes GTM connection
+                 #  includeScript(initJS),
+                 #  includeScript(tagManJS), #writes GTM connection
                    tags$link(rel = "stylesheet", type = "text/css", href = "dashboard.css"),  #Link to CSS...
                    tags$title("Colorado Demographic Profiles Comparisons") #,
                    # includeScript("www/dataL.js") # This is the linkage to the dataLayer Output code
@@ -385,6 +387,7 @@ server <- function(input, output, session) {
     if(input$level == "Municipal Ranking") {  # Added 9/18
       outBase <-  RegionList
       updateSelectInput(session, "base", choices = outBase)
+     
       shinyjs::hide("comp")
       updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
                                choices = c("Total Population" = "totpop",
@@ -403,6 +406,7 @@ server <- function(input, output, session) {
     if(input$level == "Regional Summary") {  # Added 9/18
        outBase <-  RegionList
        updateSelectInput(session, "base", choices = outBase)
+       shinyjs::show("base")
        shinyjs::hide("comp")
        updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
                                 choices = c("Basic Statistics" = "stats",
@@ -418,6 +422,7 @@ server <- function(input, output, session) {
                           selected =  "stats")
     }
     if(input$level == "Region to County") {
+      shinyjs::show("base")
       shinyjs::show("comp")
       outBase <- RegionList
       outComp <- unique(as.list(CountyList[,3]))
@@ -433,6 +438,7 @@ server <- function(input, output, session) {
                                selected =  "stats")
     }
     if(input$level == "County to County") {
+      shinyjs::show("base")
       shinyjs::show("comp")
       outBase <- unique(as.list(CountyList[,3]))
       outComp <- unique(as.list(CountyList[,3]))
@@ -449,6 +455,7 @@ server <- function(input, output, session) {
                                 selected =  "stats")
     }
     if(input$level == "Municipality to Municipality") {
+      shinyjs::show("base")
       shinyjs::show("comp")
       outBase <- unique(as.list(PlaceList[,3]))
       outComp <- unique(as.list(PlaceList[,3]))
@@ -473,8 +480,8 @@ server <- function(input, output, session) {
   observeEvent(input$profile,  {
     
 
-    dLout <- submitPush(input$level,input$unit,input$outChk)  # Generate dataLayer Command
-    session$sendCustomMessage("handler1",dLout)  #Sends dataLayer command to dataL.js script
+ #   dLout <- submitPush(input$level,input$unit,input$outChk)  # Generate dataLayer Command
+ #   session$sendCustomMessage("handler1",dLout)  #Sends dataLayer command to dataL.js script
     
     outputList <<- list()
     output$ui <- renderUI(outputList)
@@ -624,8 +631,8 @@ server <- function(input, output, session) {
                                    )))
   
           stats.box0 <- box(width=12,ln1)
-          stats.box1 <- box(width=5, height=400,leafletOutput("statMap"))
-          stats.box2 <- tabBox(width=12, height=350,
+          stats.box1 <- box(width=5, height=350,leafletOutput("statMap"))
+          stats.box2 <- tabBox(width=12, height=400,
                                tabPanel("Table",tags$div(class="Row1Tab",HTML(stat_List$Htable))),
                                tabPanel("Information",Stats.info))
           
