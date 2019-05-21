@@ -2,9 +2,8 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2018 -November 2019
 #' Release Version 1.0 4/1/2019
 
- setwd("J:/Community Profiles/Shiny Demos/Comparisons")
- 
-# devtools::install_github("jeromefroe/circlepackeR")
+# setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
 library(readr)
