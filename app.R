@@ -574,8 +574,8 @@ server <- function(input, output, session) {
                            options = list(pageLength = 8,
                                           autowidth= TRUE,
                                           scrollX = TRUE,
-                                          scrollY = TRUE,
-                                          caption = "County Rankings.  Click on header to Sort"),rownames = FALSE)
+                                          scrollY = TRUE),
+                           rownames = FALSE,caption = "County Rankings.  Click on header to Sort")   
           
           CtyRank.info <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tabin each display box.",tags$br(),
                                  tags$br(),
