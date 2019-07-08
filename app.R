@@ -383,7 +383,7 @@ server <- function(input, output, session) {
                                            "Average Annual Population Growth Rate" ="popgr",
                                            "Percentage of Population Age 25 to 64" = "pop2564",
                                            "Percentage of Population Age 65 and Older" = "pop65",
-                                           "Percentage of Non-White Persons" = "pctNW",
+                                           "Percentage of Persons of Color" = "pctNW",
                                            "Percentage of Persons with a Bachelor's Degree or Higher" = "educ",
                                            "Total Estimated Jobs"= "jobs",
                                            "Median Household Income"="medinc",
@@ -401,7 +401,7 @@ server <- function(input, output, session) {
                                            "Average Annual Population Growth Rate" ="popgr",
                                            "Percentage of Population Age 25 to 64" = "pop2564",
                                            "Percentage of Population Age 65 and Older" = "pop65",
-                                           "Percentage of Non-White Persons" = "pctNW",
+                                           "Percentage of Persons of Color" = "pctNW",
                                            "Percentage of Persons with a Bachelor's Degree or Higher" = "educ",
                                            "Total Estimated Jobs"= "jobs",
                                            "Median Household Income"="medinc",
@@ -586,7 +586,7 @@ server <- function(input, output, session) {
           
           CtyRank.box0 <- box(width=12,ln1)
           CtyRank.box1 <- box(width=4,renderCirclepackeR(CirPack))
-          CtyRank.box2 <- tabBox(width=8, 
+          CtyRank.box2 <- tabBox(width=12, 
                                tabPanel("Table",DT::dataTableOutput("CtyTabOut")),
                                tabPanel("Information",CtyRank.info))
                                
@@ -625,7 +625,7 @@ server <- function(input, output, session) {
            MuniRank.box1 <- box( width=4, renderCirclepackeR(MuniPack))
                       
              
-           MuniRank.box2 <- tabBox(width=8, 
+           MuniRank.box2 <- tabBox(width=12, 
                                   tabPanel("Table",DT::dataTableOutput("MuniTabOut")),
                                   tabPanel("Information",MuniRank.info))
            
