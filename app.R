@@ -765,7 +765,7 @@ server <- function(input, output, session) {
                               tabPanel("Sources and Downloads",poph2.info))
         
           poph3.box <- tabBox(width=12, height=400,
-                              tabPanel("Plot",renderPlotly({outploth3})),
+                              tabPanel("Plot",renderPlotly({outploth3})), 
                               tabPanel("Sources and Downloads",poph2.info))
           
           
