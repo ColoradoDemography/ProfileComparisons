@@ -13,10 +13,25 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
 
   state <- "08"
   jobsChk <- 0
+
+  
+   # Collecting place ids from  idList, setting default values
+  
+  ctyfips1 <- listID$ctyNum1
+  ctyname1 <- listID$ctyName1
+  
+  ctyfips2 <- listID$ctyNum2
+  ctyname2 <- listID$ctyName2
+  
+  placefips1 <- listID$plNum1
+  placename1 <- listID$plName1
+  
+  placefips2 <- listID$plNum2
+  placename2 <- listID$plName2
+ 
   
   if(lvl == "Regional Summary") {
-    ctyfips <- listID$ctyNum1
-    
+
     f.tPopyr1r <- data.frame()
     f.tPopyr2r <- data.frame()
     f.jobsr <- data.frame()
@@ -25,22 +40,22 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
     f.povertyr <- data.frame()
     f.nativer <- data.frame()
     
-    for(i in 1:length(ctyfips)){
+    for(i in 1:length(ctyfips1)){
       # Building up data files
       
-      sqlStrPop1 <- paste0("SELECT countyfips, municipalityname, year, totalpopulation FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips[i])," and year = ", sYr," and placefips = 0;")
-      sqlStrPop2 <- paste0("SELECT countyfips, municipalityname, year, totalpopulation FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips[i])," and year = ", eYr," and placefips = 0;")
-      sqlStrJobs <- paste0("SELECT area_code, population_year, total_jobs FROM estimates.jobs_by_sector WHERE area_code = ",as.numeric(ctyfips[i])," and population_year = ",eYr,
+      sqlStrPop1 <- paste0("SELECT countyfips, municipalityname, year, totalpopulation FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = ", sYr," and placefips = 0;")
+      sqlStrPop2 <- paste0("SELECT countyfips, municipalityname, year, totalpopulation FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = ", eYr," and placefips = 0;")
+      sqlStrJobs <- paste0("SELECT area_code, population_year, total_jobs FROM estimates.jobs_by_sector WHERE area_code = ",as.numeric(ctyfips1[i])," and population_year = ",eYr,
                            " and sector_id = '0';")
       f.tPopyr1 <-  dbGetQuery(DBPool, sqlStrPop1)
       f.tPopyr2 <-  dbGetQuery(DBPool, sqlStrPop2)
       f.Jobs <- dbGetQuery(DBPool, sqlStrJobs)
       
 
-      hhincc <- codemog_api(data="b19013",db=ACS, geonum=paste0("1", state, ctyfips[i]), meta="no")
-      MedHHValuec <- codemog_api(data="b25077",db=ACS, geonum=paste0("1", state, ctyfips[i]), meta="no")
-      povertyc <- codemog_api(data="b17001",db=ACS, geonum=paste0("1", state, ctyfips[i]), meta="no")
-      nativec <- codemog_api(data="b05002",db=ACS, geonum=paste0("1", state, ctyfips[i]), meta="no")
+      hhincc <- codemog_api(data="b19013",db=ACS, geonum=paste0("1", state, ctyfips1[i]), meta="no")
+      MedHHValuec <- codemog_api(data="b25077",db=ACS, geonum=paste0("1", state, ctyfips1[i]), meta="no")
+      povertyc <- codemog_api(data="b17001",db=ACS, geonum=paste0("1", state, ctyfips1[i]), meta="no")
+      nativec <- codemog_api(data="b05002",db=ACS, geonum=paste0("1", state, ctyfips1[i]), meta="no")
       
       f.tPopyr1r <- bind_rows(f.tPopyr1r,f.tPopyr1)
       f.tPopyr2r <- bind_rows(f.tPopyr2r,f.tPopyr2)
@@ -52,6 +67,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
     }
 
     #Creating summary records at the region level
+
     # Population
     f.tpop1r <- f.tPopyr1r %>% summarize(tpopyr1 = sum(totalpopulation))
     f.tpop2r <- f.tPopyr2r %>% summarize(tpopyr2 = sum(totalpopulation))
@@ -568,122 +584,14 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
   outTab[6,1] <- paste0("Percentage of Population with Incomes lower than the Poverty Line",footnote_marker_symbol(2))
   outTab[7,1] <- paste0("Percentage of Population Born in Colorado",footnote_marker_symbol(2))
   
-  
-
-  if(lvl == "Regional Summary") {
-    header_span <- c(" "= 1, "Counties" = Ncols, "Region" = 1,"State"=1)
-    Nvars <- Ncols + 3
-    align_spec <- c('l',rep('r',Nvars))
-  } 
-  
-  if(lvl == "Region to County") {
-    header_span <- c(" " = 1,"Comparison(s)" = Ncols-2,"Region" = 1)
-    Nvars <- Ncols
-    align_spec <- c('l',rep('r',Nvars))
-  }
-
- if(lvl == "County to County") {
-    header_span <- c(" " = 1,"Comparison(s)" = Ncols-1,"Reference Location" = 1)
-    Nvars <- Ncols
-    align_spec <- c('l',rep('r',Nvars))
-  }
- 
-  if(lvl == "Municipality to Municipality") {
-    header_span <- c(" " = 1,"Comparison(s)" = Ncols-1,"Reference Location" = 1)
-    Nvars <- Ncols
-    align_spec <- c('l',rep('r',Nvars))
-  } 
-  
-
-  #Generating HTMl File, kable Table
-  outHTML <-  kable(outTab, format='html', table.attr='class="cleanTab"',
-                    digits=1,
-                    row.names=FALSE,
-                    align=align_spec,
-                    col.names = names_spaced,
-                    caption="Community Quick Facts",
-                    escape = FALSE)   %>%
-    kable_styling() %>%
-    add_header_above(header_span)  %>%
-    column_spec(1, width = "4in") %>%
-    add_footnote(c("Source: State Demography Office",captionSrc("ACS",ACS)), notation = "symbol") 
-  # footnote(symbol= c("Source: State Demography Office",captionSrc("ACS",ACS)),threeparttable = T) 
-  
-
-  #Generate Flextable
+ #Generate output
   outTab <- gsub("<sup>"," ",outTab)
   outTab <- gsub("</sup>","",outTab)
   outTab <- gsub("&dagger;"," ^",outTab)
   f.Flex <- as.data.frame(outTab)
-  
-  # Building Header_df Data Frame and Hd_ row
+  names(f.Flex) <-  names_spaced
 
-  for(i in 1:ncol(f.Flex)){
-    if(i == 1) {
-      V <- paste0("V",i)
-      hd_row <- " "
-    } else{
-      V <- c(V,paste0("V",i))
-      hd_row <- c(hd_row," ")
-    }
-  }
-
-  
-  
-  if(lvl == "Regional Summary") {
-    
-    pos1 <- round(ncol(f.Flex)/2,digits=0)
-    pos2 <- ncol(f.Flex) - 1
-    pos3 <- ncol(f.Flex)
-    hd_row[pos1] <- "Comparison(s)"
-    hd_row[pos2] <- "Region"
-    hd_row[pos3] <- "State"
-  }
-  if(lvl == "Region to County") {
-    pos1 <- round(ncol(f.Flex)/2,digits=0) + 1
-    pos2 <- ncol(f.Flex)
-    hd_row[pos1] <- "Comparison(s)"
-    hd_row[pos2] <- "Region"
-  }
-  
-  if(lvl == "County to County") {
-    pos1 <- round(ncol(f.Flex)/2,digits=0) + 1
-    pos2 <- ncol(f.Flex)
-    hd_row[pos1] <- "Comparison Location(s)"
-    hd_row[pos2] <- "Reference Location"
-  }
-  
-  if(lvl == "Municipality to Municipality") {
-    pos1 <- round(ncol(f.Flex)/2,digits=0) + 1
-    pos2 <- ncol(f.Flex)
-    hd_row[pos1] <- "Comparison Location(s)"
-    hd_row[pos2] <- "Reference Location"
-  }
- 
-  headr_tab <- data.frame(
-    col_keys = V,
-    what = hd_row,
-    measure = names_spaced,
-    stringsAsFactors = FALSE
-  )
-
-  FlexOut <- flextable(f.Flex) %>%  
-             set_header_df(mapping = headr_tab, key = "col_keys" ) %>%
-             add_footer_row(values=paste0("^",captionSrc("ACS",ACS)),  colwidths = ncol(f.Flex)) %>%
-             add_footer_row(, values="* State Demography Office",  colwidths = ncol(f.Flex)) %>%
-             autofit() %>%
-             align(i=1:2, align="center", part="header") %>%
-             align(j=1,align="left", part="body") %>%
-             width(j=1, width = 3) %>%
-             width(j=2:(ncol(f.Flex)-1),width = 1)
-  
- 
-
-
-      
-  
-  outList <- list("Htable" = outHTML, "FlexTable" = FlexOut, "data"=f.Flex)
-  return(outList)
+  return(f.Flex)
 
 }
 

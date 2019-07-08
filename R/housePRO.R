@@ -9,149 +9,279 @@
 #' @export
 #'
 
-housePRO=function(DBPool,listID, curYr){
-
-  # Collecting place ids from  idList, setting default values
+housePRO=function(DBPool,lvl, listID, curYr){
   
-  ctyfips <- listID$ctyNum
-  ctyname <- listID$ctyName
-  placefips <- listID$plNum
-  placename <- listID$plName
-
+ # Collecting place ids from  idList, setting default values
+  
+  ctyfips1 <- listID$ctyNum1
+  ctyname1 <- listID$ctyName1
+  
+  ctyfips2 <- listID$ctyNum2
+  ctyname2 <- listID$ctyName2
+  
+  placefips1 <- listID$plNum1
+  placename1 <- listID$plName1
+  
+  placefips2 <- listID$plNum2
+  placename2 <- listID$plName2
+  
 state <- "08"
 
-  if(nchar(placefips) == 0) {
-    # Building county data table
-    HHSQL <- paste0("SELECT countyfips, year, totalpopulation, householdpopulation, groupquarterspopulation,  householdsize, totalhousingunits, vacanthousingunits, vacancyrate FROM estimates.county_profiles  WHERE (countyfips = ", ctyfips ," and year = ", curYr,");")
-  } else {
-    # Building Place data table
-    HHSQL <- paste0("SELECT countyfips, placefips, year, totalpopulation, householdpopulation, groupquarterspopulation,  householdsize, totalhousingunits, vacanthousingunits, vacancyrate FROM estimates.muni_pop_housing WHERE (placefips = ", placefips," and year = ", curYr,");")
+     # Building county data table
+
+if(lvl == "Regional Summary") {
+  f.hh <- data.frame()
+  for(i in 1:length(ctyfips1)) {
+    HHSQLcty <- paste0("SELECT countyfips, year, totalhousingunits, vacanthousingunits FROM estimates.county_profiles WHERE countyfips = ", ctyfips1[i],";")
+    HH <- dbGetQuery(DBPool,HHSQLcty)
+    nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = 1990 and placefips = 0;")
+    namex <- dbGetQuery(DBPool,nameStr)
+    HH$county <- namex$municipalityname 
+    f.hh <- bind_rows(f.hh,HH)
   }
+  f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
+  
+  #Fixing data for Broomfield
+  f.hh$totalhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$totalhousingunits)
+  f.hh$occupiedhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$occupiedhousingunits)
+  f.hh$vacanthousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$vacanthousingunits)
+  
+  f.hh <- f.hh[which(f.hh$year >= 1990),]
+  
+  # Titles
+ grTit1 <- paste0("Total Housing Units: ",ctyname1)
+ grTit2 <- paste0("Occupied Housing Units: ",ctyname1)
+ grTit3 <- paste0("Vacant Housing Units: ",ctyname1)
+}
 
-f.hhP <- dbGetQuery(DBPool, HHSQL)
+if(lvl == "Region to County") {
 
-
-# Preparing data
-if(nchar(placefips) == 0) {
-  # Building county data table
-  f.hhP$occupiedhousingunits <- f.hhP$totalhousingunits - f.hhP$vacanthousingunits
-  f.hhP <- f.hhP[,c(1,2,7,10,8,9,3:6)]
-  f.HHPl <- f.hhP %>% gather(housing, count, totalhousingunits:householdsize, factor_key=TRUE)
-  f.HHPl <- f.HHPl[,c(3,4)]
-}  else {
-    f.hhP <- f.hhP[which(as.numeric(f.hhP$countyfips) != 999),]
-    f.hhP$occupiedhousingunits <- f.hhP$totalhousingunits - f.hhP$vacanthousingunits
-    
-    f.HHPl <- f.hhP %>% summarize(totalpopulation	 = sum(totalpopulation),
-                                  householdpopulation	 = sum( householdpopulation),
-                                  groupquarterspopulation	 = sum( groupquarterspopulation),
-                                  householdsize	 = sum(  householdsize),
-                                  totalhousingunits	 = sum( totalhousingunits),
-                                  occupiedhousingunits	 = sum(occupiedhousingunits),
-                                  vacanthousingunits	 = sum( vacanthousingunits)) %>%
-                        mutate(vacancyrate = (vacanthousingunits/totalhousingunits) *100) 
-    
-     f.HHPl <- f.HHPl[,c(5:8,1:4)] %>%           
-                        gather(housing, count, totalhousingunits:householdsize, factor_key=TRUE)
+  f.hh <- data.frame()
+  for(i in 1:length(ctyfips1)) {
+    HHSQLcty <- paste0("SELECT countyfips, year, totalhousingunits, vacanthousingunits FROM estimates.county_profiles WHERE countyfips = ", ctyfips1[i],";")
+    HH <- dbGetQuery(DBPool,HHSQLcty)
+    nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = 1990 and placefips = 0;")
+    namex <- dbGetQuery(DBPool,nameStr)
+    HH$county <- namex$municipalityname 
+    f.hh <- bind_rows(f.hh,HH)
   }
+  f.hhR <- f.hh %>%
+       group_by(year) %>%
+       summarize(totalhousingunits = sum(totalhousingunits),
+                 vacanthousingunits = sum(vacanthousingunits))
+  f.hhR$countyfips <- 1000
+  f.hhR$county <- ctyname1
+  f.hhR <- f.hhR[,c(4,5,1,2,3)]
   
 
-f.HHPl$housing  <- ifelse(f.HHPl$housing == "totalpopulation", "Total Population",
-                   ifelse(f.HHPl$housing == "householdpopulation", "Household Population",         
-                   ifelse(f.HHPl$housing == "groupquarterspopulation", "Group Quarters Population",
-                   ifelse(f.HHPl$housing == "totalhousingunits", "Total Housing Units",
-                   ifelse(f.HHPl$housing == "householdsize", "Persons per Household",       
-                   ifelse(f.HHPl$housing == "occupiedhousingunits", "Occupied Housing Units",
-                   ifelse(f.HHPl$housing == "vacanthousingunits", "Vacant Housing Units","Vacancy Rate")))))))
-
-
+  #County
+ f.hhC <- data.frame()
+  for(i in 1:length(ctyfips2)) {
+    HHSQLcty <- paste0("SELECT countyfips, year, totalhousingunits, vacanthousingunits FROM estimates.county_profiles WHERE countyfips = ", ctyfips2[i],";")
+    HH <- dbGetQuery(DBPool,HHSQLcty)
+    nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips2[i])," and year = 1990 and placefips = 0;")
+    namex <- dbGetQuery(DBPool,nameStr)
+    HH$county <- namex$municipalityname 
+    f.hhC <- bind_rows(f.hhC,HH)
+  }
  
-  f.HHPl[c(1:3,5:7),2] <- comma(as.numeric(f.HHPl[c(1:3,5:7),2]))
-  f.HHPl[8,2] <- round(as.numeric(f.HHPl[8,2]), 2)
-  f.HHPl[4,2] <- percent(as.numeric(f.HHPl[4,2]))
+ f.hhC <- f.hhC[,c(1,5,2,3,4)]
+ f.hh <- rbind(f.hhC,f.hhR)
 
-  m.House <- as.matrix(f.HHPl)
-
+ f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
   
+  #Fixing data for Broomfield
+  f.hh$totalhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$totalhousingunits)
+  f.hh$occupiedhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$occupiedhousingunits)
+  f.hh$vacanthousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$vacanthousingunits)
+  
+  f.hh <- f.hh[which(f.hh$year >= 1990),]
+  
+ # Title
+ ctynames <-ctyname2[1]
+ if(length(ctyname2) > 1){
+    for(i in 2:length(ctyname2)){
+         ctynames <- paste0(ctynames,", ",ctyname2[i])
+     }
+ }
 
-  # Setting up table
-
-  #Column Names
-  names_spaced <- c("Housing Type","Value")
-  #Span Header
-
-  if(nchar(placefips) == 0) {
-  # create vector with colspan
-  tblHead1 <- c(" " = 1, ctyname = 2)
-
-  # set vector names
-  names(tblHead1) <- c(" ", ctyname)
-  tabTitle <- paste0("Housing Units: ",ctyname, ", ",curYr)
-  } else {
-    # create vector with colspan
-    tblHead1 <- c(" " = 1, placename = 2)
+    ctynames <- paste0(ctynames," and ",ctyname1)
     
-    # set vector names
-    names(tblHead1) <- c(" ", placename)
-    tabTitle <- paste0("Housing Units: ",placename,", ",curYr)
+# Titles
+ grTit1 <- paste0("Total Housing Units: ",ctynames)
+ grTit2 <- paste0("Occupied Housing Units: ",ctynames)
+ grTit3 <- paste0("Vacant Housing Units: ",ctynames)
+} 
+
+if(lvl == "County to County") {
+  # Build dataset
+  
+    fips <- as.numeric(c(ctyfips1,ctyfips2))
+    f.hh <- data.frame()
+    for(i in 1:length(fips)) {
+    HHSQLcty <- paste0("SELECT countyfips, year, totalhousingunits, vacanthousingunits FROM estimates.county_profiles WHERE countyfips = ", fips[i],";")
+    HH <- dbGetQuery(DBPool,HHSQLcty)
+    nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(fips[i])," and year = 1990 and placefips = 0;")
+    namex <- dbGetQuery(DBPool,nameStr)
+    HH$county <- namex$municipalityname 
+    f.hh <- bind_rows(f.hh,HH)
   }
 
+ f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
   
-  Htable <- m.House %>%
-    kable(format='html', table.attr='class="cleanTable"',
-          row.names=FALSE,
-          align='lr',
-          caption=tabTitle,
-          col.names = names_spaced,
-          escape = FALSE)  %>%
-    kable_styling(bootstrap_options = "condensed",full_width = F,font_size = 12) %>%
-    row_spec(0, align = "c") %>%
-    column_spec(1, width = "3.5in") %>%
-    column_spec(2, width ="0.5in") %>%
-    add_indent(c(2,3,4,6,7,8)) %>%
-   # add_header_above(header=tblHead1) %>%
-    footnote(captionSrc("SDO",curYr))
+  #Fixing data for Broomfield
+  f.hh$totalhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$totalhousingunits)
+  f.hh$occupiedhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$occupiedhousingunits)
+  f.hh$vacanthousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$vacanthousingunits)
   
-  # preparing FlexTable
+  f.hh <- f.hh[which(f.hh$year >= 1990),]
   
-  FlexOut <- regulartable(f.HHPl)
-  FlexOut <- set_header_labels(FlexOut, housing = "Housing Type", 
-                               count="Value")
-  
-  if(nchar(placefips) == 0) {
-    FlexOut <- add_header(FlexOut,count=ctyname,top=TRUE)
-  } else {
-    FlexOut <- add_header(FlexOut,count=placename,top=TRUE)
-  }
-  
-  FlexOut <- add_header(FlexOut,housing=tabTitle,top=TRUE)
-  FlexOut <- add_footer(FlexOut,housing=captionSrc("SDO",curYr))
-  FlexOut <- merge_at(FlexOut,i=1, j = 1:2, part = "header")
-  FlexOut <- merge_at(FlexOut,i=2, j = 2, part = "header") 
-  FlexOut <- merge_at(FlexOut,i=1, j = 1:2, part = "footer")
-  FlexOut <- align(FlexOut,i=1:3, j=1, align="left",part="header")
-  FlexOut <- align(FlexOut,i=2:3, j=2, align="center",part="header")
-  FlexOut <- align(FlexOut,i=1, align="left",part="footer")
-  FlexOut <- align(FlexOut, j=1, align="left", part="body")
-  FlexOut <- autofit(FlexOut)
-  FlexOut <- width(FlexOut,j=1, width=3)
-  FlexOut <- width(FlexOut,j=2, width=1)
+ # Title
+ ctynames <-ctyname2[1]
+ if(length(ctyname2) > 1){
+    for(i in 2:length(ctyname2)){
+         ctynames <- paste0(ctynames,", ",ctyname2[i])
+     }
+ }
 
-   Ltable <- m.House %>% kable(
-        col.names = names_spaced,
-        align="lrr",
-        caption=tabTitle, row.names=FALSE,
-        format="latex", booktabs=TRUE)  %>%
-        kable_styling(latex_options="HOLD_position", font_size=10) %>%
-        column_spec(1, width = "3.5in") %>%
-        column_spec(2, width ="0.5in") %>%
-        add_indent(c(2,3,4,6,7,8)) %>%
-        add_header_above(header=tblHead1) %>%
-        footnote(captionSrc("SDO",curYr),threeparttable = T)
+    ctynames <- paste0(ctynames," and ",ctyname1)
+    
+# Titles
+ grTit1 <- paste0("Total Housing Units: ",ctynames)
+ grTit2 <- paste0("Occupied Housing Units: ",ctynames)
+ grTit3 <- paste0("Vacant Housing Units: ",ctynames)
+}
 
-  names(f.HHPl) <- c(tabTitle,"Value")  
+if(lvl == "Municipality to Municipality") {
+ 
+      fips <- c(placefips2,placefips1)
+      fips <- substr(fips,3,7)
+      fips <- as.numeric(fips)
+      
+      plName <- c(placename2, placename1)
+      
+    f.hh <- data.frame()
+    for(i in 1:length(fips)) {
+        HHSQLmuni <- paste0("SELECT countyfips, placefips, municipalityname, year, totalhousingunits, occupiedhousingunits, vacanthousingunits FROM estimates.muni_pop_housing WHERE (placefips = ", fips[i],");")
+        HH <- dbGetQuery(DBPool,HHSQLmuni)
+        HH$municipalityname <- plName[i]
+        f.hh <- bind_rows(f.hh,HH)
+    }
+  # Remove Municipal Total
+    f.hh <- f.hh[which(f.hh$countyfips != 999),]
+    f.hh <- f.hh[which(f.hh$year >= 1990),]
+    
+    f.hh <- f.hh %>%
+          group_by(municipalityname, year) %>%
+          summarize(totalhousingunits = sum(totalhousingunits),
+                    occupiedhousingunits = sum(occupiedhousingunits),
+                    vacanthousingunits = sum(vacanthousingunits))  
+          
+    
+  
+  
+ # Title
+ placenames <-placename2[1]
+ if(length(placename2) > 1){
+    for(i in 2:length(placename2)){
+         placenames <- paste0(placenames,", ",placename2[i])
+     }
+ }
 
-   outList <- list("Htable" = Htable, "Ltable" = Ltable,"data" = f.HHPl,"FlexTable" = FlexOut)
+    placenames <- paste0(placenames," and ",placename1)
+    
+# Titles
+ grTit1 <- paste0("Total Housing Units: ",placenames)
+ grTit2 <- paste0("Occupied Housing Units: ",placenames)
+ grTit3 <- paste0("Vacant Housing Units: ",placenames)
+}
+
+ # Setting axis labels 
+ x  <- list(title = "")
+ y1 <- list(title = "Total Housing Units")
+ y2 <- list(title = "Occupied Housing Units")
+ y3 <- list(title = "Vacant Housing Units")
+ 
+ # Legend
+ l <- list(
+    font = list(
+      family = "sans-serif",
+      size = 12,
+      color = "#000"),
+    bg_color = "#DCDCDC",
+    orientation = "h",
+    bordercolor = "#FFFFFF",
+    borderwidth = 2)  
+if(lvl == "Municipality to Municipality") {
+tPlot<-  plot_ly(x=f.hh$year, y=f.hh$totalhousingunits, 
+                      type="scatter",mode='lines', color=f.hh$municipalityname,
+                      transforms = list( type = 'groupby', groups = f.hh$municipalityname),
+                      hoverinfo = "text",
+                      text = ~paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+               layout(title = grTit1,
+                        xaxis = x,
+                        yaxis = y1,
+                      legend = l,
+                      hoverlabel = "right")
+
+oPlot<-  plot_ly(x=f.hh$year, y=f.hh$occupiedhousingunits, 
+                      type="scatter",mode='lines', color=f.hh$municipalityname,
+                      transforms = list( type = 'groupby', groups = f.hh$municipalityname),
+                      hoverinfo = "text",
+                      text = ~paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+               layout(title = grTit2,
+                        xaxis = x,
+                        yaxis = y2,
+                      legend = l,
+                      hoverlabel = "right")
+
+vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits, 
+                      type="scatter",mode='lines', color=f.hh$municipalityname,
+                      transforms = list( type = 'groupby', groups = f.hh$municipalityname),
+                      hoverinfo = "text",
+                      text = ~paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))) %>% 
+               layout(title = grTit3,
+                        xaxis = x,
+                        yaxis = y3,
+                      legend = l,
+                      hoverlabel = "right")
+} else {
+  tPlot<-  plot_ly(x=f.hh$year, y=f.hh$totalhousingunits, 
+                      type="scatter",mode='lines', color=f.hh$county,
+                      transforms = list( type = 'groupby', groups = f.hh$county),
+                      hoverinfo = "text",
+                      text = ~paste0(f.hh$county, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+               layout(title = grTit1,
+                        xaxis = x,
+                        yaxis = y1,
+                      legend = l,
+                      hoverlabel = "right")
+
+ oPlot<-  plot_ly(x=f.hh$year, y=f.hh$occupiedhousingunits, 
+                      type="scatter",mode='lines', color=f.hh$county,
+                      transforms = list( type = 'groupby', groups = f.hh$county),
+                      hoverinfo = "text",
+                      text = ~paste0(f.hh$county, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+               layout(title = grTit2,
+                        xaxis = x,
+                        yaxis = y2,
+                      legend = l,
+                      hoverlabel = "right")
+
+vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits, 
+                      type="scatter",mode='lines', color=f.hh$county,
+                      transforms = list( type = 'groupby', groups = f.hh$county),
+                      hoverinfo = "text",
+                      text = ~paste0(f.hh$county, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))) %>% 
+               layout(title = grTit3,
+                        xaxis = x,
+                        yaxis = y3,
+                      legend = l,
+                      hoverlabel = "right")
+}
+ 
+   outList <- list("plot1" = tPlot, "plot2" = oPlot, "plot3" = vPlot,
+                   "data" = f.hh)
    return(outList)
   }
 
