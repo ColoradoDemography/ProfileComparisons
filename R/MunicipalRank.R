@@ -127,7 +127,7 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
     
     
     f.munifull <- inner_join(f.munifull, f.nonwhite[,c(7,31)], by="GEOID")
-    popnames <- c("Percent of Non-White Persons" = "pctNonWhite")
+    popnames <- c("Percent of Persons of Color" = "pctNonWhite")
     colName2 <- c(colName2,popnames)
     incProgress()
   }

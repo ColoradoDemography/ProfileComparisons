@@ -123,7 +123,7 @@ CountyRank <- function(DBPool, CtyList, chkList, eYr, ACS) {
     
     f.nonwhite <- f.nonwhite[,c(7,31)]
     f.ctyfull <- inner_join(f.ctyfull, f.nonwhite, by="GEOID")
-    popnames <- c("Percent of Non-White Persons" = "pctNonWhite")
+    popnames <- c("Percent of Persons of Color" = "pctNonWhite")
     colName2 <- c(colName2,popnames)
     incProgress()
   }
