@@ -692,9 +692,9 @@ server <- function(input, output, session) {
         if("popf" %in% input$outChk){
           #Chart/Table Objects
           popf1 <<- popPlotly(DBPool=DOLAPool,lvl=input$level,listID=idList)
-          outplot1 <- popf1$plot1
-          outplot2 <- popf1$plot2
-          outplot3 <- popf1$plot3
+          outplotp1 <- popf1$plot1
+          outplotp2 <- popf1$plot2
+          outplotp3 <- popf1$plot3
           
           #infobox Objects
             popf1.info <- tags$div(boxContent(title= "Population Estimates and Forecasts",
@@ -705,7 +705,7 @@ server <- function(input, output, session) {
                                    downloadObjUI("popf1data"))
      
              popf1.box <- tabBox(width=12, height=500,
-                              tabPanel("Plot",renderPlotly({outplot1})),
+                              tabPanel("Plot",renderPlotly({outplotp1})),
                               tabPanel("Sources and Downloads",popf1.info))
              
              popf2.info <- tags$div(boxContent(title= "Natural Increase",
@@ -716,7 +716,7 @@ server <- function(input, output, session) {
                                    downloadObjUI("popf2data"))
      
              popf2.box <- tabBox(width=12, height=500,
-                              tabPanel("Plot",renderPlotly({outplot2})),
+                              tabPanel("Plot",renderPlotly({outplotp2})),
                               tabPanel("Sources and Downloads",popf2.info))
              
              
@@ -728,7 +728,7 @@ server <- function(input, output, session) {
                                    downloadObjUI("popf3data"))
      
              popf3.box <- tabBox(width=12, height=500,
-                              tabPanel("Plot",renderPlotly({outplot3})),
+                              tabPanel("Plot",renderPlotly({outplotp3})),
                               tabPanel("Sources and Downloads",popf3.info))
               #Append to List
               popf.list <<- list(popf1.box, popf2.box, popf3.box)
@@ -747,7 +747,7 @@ server <- function(input, output, session) {
           outploth3 <- poph2$plot3
           
           poph2.info <- tags$div(boxContent(title= "Housing Type Plots",
-                                            description= "The Housing Type Table compares the categories of housing types for a selected place to the State.",
+                                            description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
                                             MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
                                             urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
                                                            c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
