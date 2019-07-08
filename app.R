@@ -742,9 +742,9 @@ server <- function(input, output, session) {
           #Generate tables, plots and text...
           poph2 <<- housePRO(DBPool=DOLAPool,lvl=input$level,listID=idList, curYr=curYr) # Housing Unit Table
           
-          outplot1 <- poph2$plot1
-          outplot2 <- poph2$plot2
-          outplot3 <- poph2$plot3
+          outploth1 <- poph2$plot1
+          outploth2 <- poph2$plot2
+          outploth3 <- poph2$plot3
           
           poph2.info <- tags$div(boxContent(title= "Housing Type Plots",
                                             description= "The Housing Type Table compares the categories of housing types for a selected place to the State.",
@@ -757,15 +757,15 @@ server <- function(input, output, session) {
 
           # Bind to boxes
           poph1.box <- tabBox(width=12, height=400,
-                              tabPanel("Plot",renderPlotly({outplot1})),
+                              tabPanel("Plot",renderPlotly({outploth1})),
                               tabPanel("Sources and Downloads",poph2.info))
           
           poph2.box <- tabBox(width=12, height=400,
-                              tabPanel("Plot",renderPlotly({outplot2})),
+                              tabPanel("Plot",renderPlotly({outploth2})),
                               tabPanel("Sources and Downloads",poph2.info))
         
           poph3.box <- tabBox(width=12, height=400,
-                              tabPanel("Plot",renderPlotly({outplot3})),
+                              tabPanel("Plot",renderPlotly({outploth3})),
                               tabPanel("Sources and Downloads",poph2.info))
           
           
