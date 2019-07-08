@@ -421,7 +421,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf"))
+                          selected =  c("stats", "popf","housing"))
     }
     if(input$level == "Region to County") {
       shinyjs::show("base")
@@ -436,7 +436,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf"))
+                          selected =  c("stats", "popf","housing"))
     }
     if(input$level == "County to County") {
       shinyjs::show("base")
@@ -451,7 +451,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf"))
+                          selected =  c("stats", "popf","housing"))
     }
     if(input$level == "Municipality to Municipality") {
       shinyjs::show("base")
@@ -463,7 +463,7 @@ server <- function(input, output, session) {
       updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
                                 choices = c("Basic Statistics" = "stats",
                                             "Housing and Households" = "housing"),
-                          selected =  c("stats", "popf"))
+                          selected =  c("stats", "housing"))
     }
   }))  #observeEvent input$level
   
