@@ -2,7 +2,7 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2019 -November 2019
 #' Release Version 0.5 5/21/2019
 
-setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+#setwd("J:/Community Profiles/Shiny Demos/Comparisons")
 
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
@@ -108,7 +108,7 @@ source("R/unemployment.R")
 # tPath <- "J:/Community Profiles/Shiny Demos/TempDir"  #Development
 
 #Production
-# tPath <- "/tmp"  
+tPath <- "/tmp"  
 
 # Locations for Google Analtyics Java Script Files
 # Local/ Development
@@ -117,8 +117,8 @@ source("R/unemployment.R")
 # tagManJS <- "J:/Community Profiles/Shiny Demos/Comparisons/www/tag_manager.js"
 
 #Production
-# initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
-# tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
+ initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
+ tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
 
 # Current ACS database
 curACS <- "acs1317"
