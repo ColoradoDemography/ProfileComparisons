@@ -108,7 +108,7 @@ source("R/unemployment.R")
 # tPath <- "J:/Community Profiles/Shiny Demos/TempDir"  #Development
 
 #Production
-tPath <- "/tmp"  
+ tPath <- "/tmp"  
 
 # Locations for Google Analtyics Java Script Files
 # Local/ Development
@@ -117,8 +117,8 @@ tPath <- "/tmp"
 # tagManJS <- "J:/Community Profiles/Shiny Demos/Comparisons/www/tag_manager.js"
 
 #Production
- initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
- tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
+# initJS <- "/srv/shiny-server/ProfileDashboard2/www/dL_init.js"
+# tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
 
 # Current ACS database
 curACS <- "acs1317"
@@ -765,7 +765,7 @@ server <- function(input, output, session) {
                               tabPanel("Sources and Downloads",poph2.info))
         
           poph3.box <- tabBox(width=12, height=400,
-                              tabPanel("Plot",renderPlotly({outploth3})), 
+                              tabPanel("Plot",renderPlotly({outploth3})),
                               tabPanel("Sources and Downloads",poph2.info))
           
           
