@@ -176,7 +176,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
  
   #Region to County
   if(lvl == "Region to County") {
-   
+
     #Building Region Data
     ctyfips <- listID$ctyNum1
     
@@ -241,7 +241,8 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
                     f.medHHVal$MedianHH,f.povertypct$povpct,f.nativepct$nativepct)
     
     #Generating County Data
-    ctyfips2 <- listID$ctyNum2
+
+    ctyfips2 <-listID$ctyNum2
     f.tPopyr1c <- data.frame()
     f.tPopyr2c <- data.frame()
     f.jobsc <- data.frame()
@@ -305,18 +306,19 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
                                          tpop = as.numeric(b05002001),
                                          nativepct = percent((nnative/tpop)*100))
     f.nativepctc <- f.nativepctc[,c(3,37)] %>% mutate(countyfips = as.numeric(county))
-  
-   countyData <- left_join(f.tpopC,  f.jobssumC, by='countyfips') %>%
-                 left_join(., f.medhhinc, by='countyfips') %>%
-                 left_join(., f.medHHValc, by='countyfips') %>%
-                 left_join(., f.povertypctc, by='countyfips') %>%
-                 left_join(., f.nativepctc, by= 'countyfips')
-   countyData <- countyData[,c(1:3,5,7,9,11,13)] 
+    
+    countyData <- left_join(f.tpopC,  f.jobssumC, by='countyfips') %>%
+      left_join(., f.medhhinc, by='countyfips') %>%
+      left_join(., f.medHHValc, by='countyfips') %>%
+      left_join(., f.povertypctc, by='countyfips') %>%
+      left_join(., f.nativepctc, by= 'countyfips')
+    countyData <- countyData[,c(1:3,5,7,9,11,13)] 
   }
 
   
   if(lvl == "County to County") {
     #Generating County Data
+
     ctyfips2 <- unique(c(listID$ctyNum2,listID$ctyNum1))
     f.tPopyr1c <- data.frame()
     f.tPopyr2c <- data.frame()
@@ -515,20 +517,21 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
   }   
   
   if(lvl == "Region to County"){
+ 
     names_spaced <- c(" ",unique(c(listID$ctyName2,listID$ctyName1)))
     Ncols <- nrow(countyData) + 2
     outTab <- matrix(" ",nrow=7,ncol=Ncols)
-    
-    for(i in 1:nrow(countyData)){
+        for(j in 1:nrow(countyData)){
       #County
-      outTab[1,i+1] <- format(as.numeric(countyData[i,2]),nsmall=0, big.mark=",")
-      outTab[2,i+1] <- format(as.numeric(countyData[i,3]),nsmall=0, big.mark=",")
-      outTab[3,i+1] <- format(round(as.numeric(countyData[i,4]),digits=0),nsmall=0, big.mark=",")
-      outTab[4,i+1] <- paste0("$",format(round(as.numeric(countyData[i,5]),digits=0),nsmall=0, big.mark=","))
-      outTab[5,i+1] <- paste0("$",format(round(as.numeric(countyData[i,6]),digits=0),nsmall=0, big.mark=","))
-      outTab[6,i+1] <- countyData[i,7]
-      outTab[7,i+1] <- countyData[i,8]
+      outTab[1,j+1] <- format(as.numeric(countyData[j,2]),nsmall=0, big.mark=",")
+      outTab[2,j+1] <- format(as.numeric(countyData[j,3]),nsmall=0, big.mark=",")
+      outTab[3,j+1] <- format(round(as.numeric(countyData[j,4]),digits=0),nsmall=0, big.mark=",")
+      outTab[4,j+1] <- paste0("$",format(round(as.numeric(countyData[j,5]),digits=0),nsmall=0, big.mark=","))
+      outTab[5,j+1] <- paste0("$",format(round(as.numeric(countyData[j,6]),digits=0),nsmall=0, big.mark=","))
+      outTab[6,j+1] <- countyData[j,7]
+      outTab[7,j+1] <- countyData[j,8]
     }
+    
 
     #Region
     outTab[1,Ncols] <- format(as.numeric(regionData[1]),nsmall=0, big.mark=",")
