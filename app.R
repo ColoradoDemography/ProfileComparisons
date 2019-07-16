@@ -421,7 +421,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf","housing"))
+                          selected =  c("stats", "popf","housing","emplind"))
     }
     if(input$level == "Region to County") {
       shinyjs::show("base")
@@ -436,7 +436,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf","housing"))
+                          selected =  c("stats", "popf","housing","emplind"))
     }
     if(input$level == "County to County") {
       shinyjs::show("base")
@@ -451,7 +451,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf","housing"))
+                          selected =  c("stats", "popf","housing","emplind"))
     }
     if(input$level == "Municipality to Municipality") {
       shinyjs::show("base")
@@ -641,14 +641,15 @@ server <- function(input, output, session) {
         #stats; Basic Statistics
         if("stats" %in% input$outChk) {
           stats.text <- tags$h2("Basic Statistics")
-          stat_List <- statsTable1(DBPool=DOLAPool,lvl=input$level,listID=idList,sYr=2010,eYr=curYr,ACS=curACS)
-          stat_map <- dashboardMAP(DBPool=DOLAPool,lvl=input$level,listID=idList)
+          
+          stat_List <<- statsTable1(DBPool=DOLAPool,lvl=input$level,listID=idList,sYr=2010,eYr=curYr,ACS=curACS)
+          stat_map <<- dashboardMAP(DBPool=DOLAPool,lvl=input$level,listID=idList)
           
           #Images
-          output$statMap <- renderLeaflet({stat_map})
-          
+          output$statMap <- renderLeaflet(stat_map)
+       
           # Output DT Table
-           statstab <- stat_List$data
+          
            output$StatTabOut <- DT::renderDataTable(stat_List,
                                                    options = list(pageLength = 9,
                                                                   autowidth= TRUE,
@@ -778,90 +779,28 @@ server <- function(input, output, session) {
         #Employment by Industry
         if("emplind" %in% input$outChk){
           #Generate tables, plots and text...
-          popei1 <<- jobsPlot(DBPool=DOLAPool,listID=idList, maxyr = curYr)
-          popei2 <<- jobsByIndustry(DBPool=DOLAPool,listID=idList, curyr = curYr)
-          popei3 <<- baseIndustries(DBPool=DOLAPool,listID=idList, curyr = curYr)
+          popei1 <<-  baseIndustries(DBPool=DOLAPool,lvl=input$level,listID=idList, curyr = curYr)
           
-          #JobsPlot
-          ggsave(fileMat[64],popei1$plot, device="png", height = 5 , width = 7, dpi=300)
-          ggsave(fileMat[65],popei1$plot, device="png", height = 5 , width = 7, dpi=300)
-          dput(popei1$text, fileMat[66])
-          img_List14 <- list(src = fileMat[64], contentType = 'image/png', width = 500, height = 300)
-          
-          #Jobs by Industry
-          ggsave(fileMat[67],popei2$plot, device="png", height = 5 , width = 7, dpi=300)
-          ggsave(fileMat[68],popei2$plot, device="png", height = 5 , width = 7, dpi=300)
-          dput(popei2$text1, fileMat[69])
-          dput(popei2$text2, fileMat[70])
-          img_List15 <- list(src = fileMat[67], contentType = 'image/png', width = 500, height = 300)
-          
-          #base Industries
-          #Plot
-          ggsave(fileMat[71],popei3$plot, device="png", height = 5 , width = 7, dpi=300)
-          ggsave(fileMat[72],popei3$plot, device="png", height = 5 , width = 7, dpi=300)
-          img_List16 <- list(src = fileMat[71], contentType = 'image/png', width = 500, height = 300)
-          
-          # HTML Table
-          dput(popei3$Htable, fileMat[73])
-          
-          #latex Table
-          dput(popei3$Ltable, fileMat[74])
-          #Text
-          dput(popei3$text, fileMat[75])
-          
-          
+          eiplot <- popei1$plot
           
           #Contents of Information Tabs
           popei1.info <- tags$div(boxContent(title= "Estimated Firms and Jobs",
                                              description = "The Estimated Firms and Jobs Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
+                                             MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("Firms: Department of Labor and Employment Quarterly Census of Employment and Wages","https://www.colmigateway.com/gsipub/index.asp?docid=372"),
                                                             c("Jobs: Jobs by Sector (NAICS)","https://demography.dola.colorado.gov/economy-labor-force/data/jobs-by-sector/#jobs-by-sector-naics"))),
                                   tags$br(),
                                   downloadObjUI("popei1plot"),  downloadObjUI("popei1data"))
           
-          popei2.info <- tags$div(boxContent(title= "Jobs by Sector / Economic Industry Mix",
-                                             description= "Comparing the share of jobs by industry to a larger area helps to get a better understanding of the industries with higher or lower employment concentrations.  The industry mix can also help inform the average weekly wages as industries such as retail trade or 
-                                             accommodation and food pay considerably less than professional and technical services or mining.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
-                                             urlList = list(c("SDO Base Industries Summary","https://drive.google.com/file/d/1Ag0JdOo8XATTBiNuh80BTiuqLV4Kv72T/view"),
-                                                            c("Jobs by Sector (NAICS)","https://demography.dola.colorado.gov/economy-labor-force/data/jobs-by-sector/#jobs-by-sector-naics"))),
-                                  tags$br(),
-                                  downloadObjUI("popei2plot"), downloadObjUI("popei2data"))
-          
-          
-          popei3.info <- tags$div(boxContent(title= "Base Industries Plot",
-                                             description= "The Base Industries plot shows which industries drive the county economy by bringing in dollars from outside the area.  A county with a diversity of base industries with similar shares of employment will 
-                                             generally be more resilient than one that is dominated by one large industry.",
-                                             MSA= "T", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
-                                             urlList = list(c("SDO Base Industries Summary","https://drive.google.com/file/d/1Ag0JdOo8XATTBiNuh80BTiuqLV4Kv72T/view"),
-                                                            c("SDO Base industries Anaysis","https://demography.dola.colorado.gov/economy-labor-force/data/base-analysis/#base-industries-analysis"))),
-                                  tags$br(),
-                                  downloadObjUI("popei3plot"), downloadObjUI("popei3data"))
-          
-          popei4.info <- tags$div(boxContent(title= "Base Industries Table",
-                                             description= "The Base Industries Table summarizes the number of jobs in indirect basic employment, direct basic employment and local services sectors.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
-                                             urlList = list(c("SDO Base Industries Summary","https://drive.google.com/file/d/1Ag0JdOo8XATTBiNuh80BTiuqLV4Kv72T/view"),
-                                                            c("SDO Base Industries Anaysis","https://demography.dola.colorado.gov/economy-labor-force/data/base-analysis/#base-industries-analysis"))),
-                                  tags$br(),
-                                  downloadObjUI("popei4tabl"),downloadObjUI("popei4data"))
+ 
           # Bind to boxes
-          popei1.box <- tabBox(width=6, height=400,
-                               tabPanel("Plot",renderImage({img_List14})),
+          popei1.box <- tabBox(width=12, height=400,
+                               tabPanel("Plot",renderPlotly({eiplot})),
                                tabPanel("Sources and Downloads",popei1.info))
-          popei2.box <- tabBox(width=6, height=400,
-                               tabPanel("Plot",renderImage({img_List15})),
-                               tabPanel("Sources and Downloads",popei2.info))
-          popei3.box <- tabBox(width=6, height=400,
-                               tabPanel("Plot",renderImage({img_List16})),
-                               tabPanel("Sources and Downloads",popei3.info))
-          popei4.box <- tabBox(width=6, height=400,
-                               tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[73])))),
-                               tabPanel("Sources and Downloads",popei4.info))
-          
+ 
           #Append to List
-          popei.list <<- list(popei1.box,popei2.box,popei3.box,popei4.box)
+          popei.list <<- list(popei1.box)
+         # popei.list <<- list(popei1.box,popei2.box,popei3.box,popei4.box)
           incProgress()
         }  #Employment by Industry
         
@@ -872,40 +811,6 @@ server <- function(input, output, session) {
           popem2 <<- weeklyWages(DBPool=DOLAPool,listID=idList,curyr=curYr)
           popem3 <<- residentialLF(DBPool=DOLAPool,listID=idList,curyr=curYr)
           popem4 <<- unemployment(DBPool=DOLAPool,listID=idList,curyr=curYr)  
-          
-          #JobsPopForecast
-          # HTML Table
-          dput(popem1$Htable, fileMat[76])
-          
-          #latex Table
-          dput(popem1$Ltable, fileMat[77])
-          dput(popem1$text, fileMat[78])
-          
-          
-          #weeklyWages
-          ggsave(fileMat[79],popem2$plot, device="png", height = 5 , width = 7, dpi=300)
-          ggsave(fileMat[80],popem2$plot, device="png", height = 5 , width = 7, dpi=300)
-          dput(popem2$text, fileMat[81])
-          img_List18 <- list(src = fileMat[79], contentType = 'image/png', width = 500, height = 300)
-          
-          #residentialLF
-          # HTML Table
-          dput(popem3$Htable, fileMat[82])
-          
-          #latex Table
-          dput(popem3$Ltable, fileMat[83])
-          dput(popem3$text, fileMat[84])
-         
-          
-          #Unemploymenr
-          # HTML Table
-          ggsave(fileMat[85],popem4$plot, device="png", height = 5 , width = 7, dpi=300)
-          ggsave(fileMat[86],popem4$plot, device="png", height = 5 , width = 7, dpi=300)
-          
-          img_List19 <- list(src = fileMat[85], contentType = 'image/png', width = 500, height = 300)
-          
-          #Text
-          dput(popem4$text, fileMat[87])
           
           
           
@@ -991,7 +896,7 @@ server <- function(input, output, session) {
    }
 
     output$ui  <- renderUI({ do.call(tabsetPanel, tabs) }) #renderUI
-    
+   
     
     
     
@@ -1095,6 +1000,8 @@ server <- function(input, output, session) {
     
     callModule(downloadObj, id = "popem4plot", simpleCap(input$unit),"popem4plot", popem4$plot)
     callModule(downloadObj, id = "popem4data", simpleCap(input$unit),"popem4data", popem4$data)
+   # reset("comp")
+   # updateSelectizeInput(session, "comp", choices = outComp)
     
   }) #observeEvent input$profile
   
