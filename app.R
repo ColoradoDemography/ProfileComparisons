@@ -796,13 +796,13 @@ server <- function(input, output, session) {
                                   downloadObjUI("popei1data"))
           
          popei2.info <- tags$div(boxContent(title= "Estimated Jobs Plot",
-                                             description = "The Estimated Jobs Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present.",
+                                             description = "The Estimated Jobs Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present. The grey boxes indicate periods of economic recession.",
                                              MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("Jobs: Jobs by Sector (NAICS)","https://demography.dola.colorado.gov/economy-labor-force/data/jobs-by-sector/#jobs-by-sector-naics"))),
                                              tags$br(),  downloadObjUI("popei2data"))
   
          popei3.info <- tags$div(boxContent(title= "Estimated Firms Plot",
-                                             description = "The Estimated Firms Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present.",
+                                             description = "The Estimated Firms Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present. The grey boxes indicate periods of economic recession.",
                                              MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("Firms: Department of Labor and Employment Quarterly Census of Employment and Wages","https://www.colmigateway.com/gsipub/index.asp?docid=372"))),
                                              tags$br(), downloadObjUI("popei3data"))
