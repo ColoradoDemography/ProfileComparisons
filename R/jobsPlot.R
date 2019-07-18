@@ -154,6 +154,18 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
  maxJobs <- max(jobs_data$jobs)
  maxFirms <- max(firms_data$firms) 
  
+ # Legend
+ l <- list(
+    font = list(
+      family = "sans-serif",
+      size = 12,
+      color = "#000"),
+    bg_color = "#DCDCDC",
+    orientation = "h",
+    bordercolor = "#FFFFFF",
+    borderwidth = 2)  
+ 
+ 
  jobs_plot <-  plot_ly(x=jobs_data$year, y=jobs_data$jobs, 
                       type="scatter",mode='lines', color=jobs_data$geoname,
                       transforms = list( type = 'groupby', groups = jobs_data$geoname),
@@ -162,6 +174,7 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                layout(title = grTit1,
                         xaxis = x,
                         yaxis = y1,
+                        legend = l,
                         hoverlabel = "right",
                      shapes = list(
                list(type = "rect",
@@ -181,6 +194,7 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                layout(title = grTit2,
                         xaxis = x,
                         yaxis = y2,
+                        legend = l,
                         hoverlabel = "right",
                      shapes = list(
                list(type = "rect",
