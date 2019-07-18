@@ -11,7 +11,7 @@
 
 baseIndustries <- function(DBPool,lvl,listID, curyr, oType,base=10){
   
-
+  PMSA <- c("001", "005", "013", "014", "031", "035", "059")
    # Collecting place ids from  idList, setting default values
   
   ctyfips1 <- listID$ctyNum1
@@ -83,23 +83,25 @@ if(lvl == "Region to County"){
 }
 
   if(lvl == "County to County") {
-    ctyfips <- c(ctyfips1, ctyfips2)
+    # Selecting out records 
+    if((ctyfips1 %in% PMSA) || (ctyfips2 %in% PMSA)) {
+            jobsSQL <- paste0("SELECT * FROM estimates.base_analysis where fips = '500';")
+            f.jobsindR <- dbGetQuery(DBPool, jobsSQL)
+    }
+    
+    ctyfips <- c(ctyfips1[which(!ctyfips1 %in% PMSA)], ctyfips2[which(!ctyfips2 %in% PMSA )])
       #Building County data
    f.jobsindC <- data.frame()
     for(i in 1:length(ctyfips)) {
-       if(ctyfips2[i] %in% c("001", "005", "013", "014", "031", "035", "059")) {
-            jobsSQL <- paste0("SELECT * FROM estimates.base_analysis where fips = '500';")
-       } else {
-         jobsSQL <- paste0("SELECT * FROM estimates.base_analysis WHERE fips = '",ctyfips[i], "';")
-       } 
+        jobsSQL <- paste0("SELECT * FROM estimates.base_analysis WHERE fips = '",ctyfips[i], "';")
          f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
          f.jobsindC <- bind_rows(f.jobsindC,f.jobsBase)
       }
      
     f.jobsindC <-  distinct(f.jobsindC,fips, .keep_all = TRUE)
     
-    f.jobsind <- f.jobsindC
-    grTitle <- paste0(curyr, " Base Industries (without Indirect): ",ctyname1, " compared to ",ctyname2)
+    f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
+    grTitle <- paste0(curyr, " Base Industries (without Indirect): ",ctyname2, " compared to ",ctyname1)
   }
   
   # convert datasets to long
