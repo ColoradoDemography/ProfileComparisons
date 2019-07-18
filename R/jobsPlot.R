@@ -151,7 +151,9 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
  x  <- list(title = "")
  y1 <- list(title = "Number of Jobs")
  y2 <- list(title = "Number of Firms")
-  
+ maxJobs <- max(jobs_data$jobs)
+ maxFirms <- max(firms_data$firms) 
+ 
  jobs_plot <-  plot_ly(x=jobs_data$year, y=jobs_data$jobs, 
                       type="scatter",mode='lines', color=jobs_data$geoname,
                       transforms = list( type = 'groupby', groups = jobs_data$geoname),
@@ -160,7 +162,16 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                layout(title = grTit1,
                         xaxis = x,
                         yaxis = y1,
-                        hoverlabel = "right")
+                        hoverlabel = "right",
+                     shapes = list(
+               list(type = "rect",
+                    fillcolor = "grey", line = list(color = "grey"), opacity = 0.3,
+                    x0 = "2001", x1 = "2002", xref = "x",
+                    y0 = 0, y1 = maxJobs, yref = "y"),
+               list(type = "rect",
+                 fillcolor = "grey", line = list(color = "grey"), opacity = 0.3,
+                 x0 = "2008", x1 = "2010", xref = "x",
+                 y0 = 0, y1 = maxJobs, yref = "y")))
  
  firms_plot <-  plot_ly(x=firms_data$year, y=firms_data$firms, 
                       type="scatter",mode='lines', color=firms_data$geoname,
@@ -170,7 +181,16 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                layout(title = grTit2,
                         xaxis = x,
                         yaxis = y2,
-                        hoverlabel = "right")
+                        hoverlabel = "right",
+                     shapes = list(
+               list(type = "rect",
+                    fillcolor = "grey", line = list(color = "grey"), opacity = 0.3,
+                    x0 = "2001", x1 = "2002", xref = "x",
+                    y0 = 0, y1 = maxFirms, yref = "y"),
+               list(type = "rect",
+                 fillcolor = "grey", line = list(color = "grey"), opacity = 0.3,
+                 x0 = "2008", x1 = "2010", xref = "x",
+                 y0 = 0, y1 = maxFirms, yref = "y")))
   
 
   
