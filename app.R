@@ -757,15 +757,15 @@ server <- function(input, output, session) {
           
 
           # Bind to boxes
-          poph1.box <- tabBox(width=12, height=400,
+          poph1.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outploth1})),
                               tabPanel("Sources and Downloads",poph2.info))
           
-          poph2.box <- tabBox(width=12, height=400,
+          poph2.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outploth2})),
                               tabPanel("Sources and Downloads",poph2.info))
         
-          poph3.box <- tabBox(width=12, height=400,
+          poph3.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outploth3})),
                               tabPanel("Sources and Downloads",poph2.info))
           
@@ -780,27 +780,49 @@ server <- function(input, output, session) {
         if("emplind" %in% input$outChk){
           #Generate tables, plots and text...
           popei1 <<-  baseIndustries(DBPool=DOLAPool,lvl=input$level,listID=idList, curyr = curYr)
-          
+          popei2 <<- jobsPlot(DBPool=DOLAPool,lvl=input$level,listID=idList, maxyr = curYr)
           eiplot <- popei1$plot
+          jobsplot <- popei2$plot1
+          firmsplot <- popei2$plot2
           
           #Contents of Information Tabs
-          popei1.info <- tags$div(boxContent(title= "Estimated Firms and Jobs",
-                                             description = "The Estimated Firms and Jobs Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
-                                             urlList = list(c("Firms: Department of Labor and Employment Quarterly Census of Employment and Wages","https://www.colmigateway.com/gsipub/index.asp?docid=372"),
-                                                            c("Jobs: Jobs by Sector (NAICS)","https://demography.dola.colorado.gov/economy-labor-force/data/jobs-by-sector/#jobs-by-sector-naics"))),
+          popei1.info <- tags$div(boxContent(title= "Base Industries Plot",
+                                            description= "The Base Industries plot shows which industries drive the county economy by bringing in dollars from outside the area.  A county with a diversity of base industries with similar shares of employment will 
+                                             generally be more resilient than one that is dominated by one large industry.",
+                                            MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
+                                             urlList = list(c("SDO Base Industries Summary","https://drive.google.com/file/d/1Ag0JdOo8XATTBiNuh80BTiuqLV4Kv72T/view"),
+                                                            c("SDO Base industries Anaysis","https://demography.dola.colorado.gov/economy-labor-force/data/base-analysis/#base-industries-analysis"))),
                                   tags$br(),
-                                  downloadObjUI("popei1plot"),  downloadObjUI("popei1data"))
+                                  downloadObjUI("popei1data"))
           
- 
-          # Bind to boxes
-          popei1.box <- tabBox(width=12, height=400,
-                               tabPanel("Plot",renderPlotly({eiplot})),
-                               tabPanel("Sources and Downloads",popei1.info))
+         popei2.info <- tags$div(boxContent(title= "Estimated Jobs Plot",
+                                             description = "The Estimated Jobs Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present.",
+                                             MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
+                                             urlList = list(c("Jobs: Jobs by Sector (NAICS)","https://demography.dola.colorado.gov/economy-labor-force/data/jobs-by-sector/#jobs-by-sector-naics"))),
+                                             tags$br(),  downloadObjUI("popei2data"))
+  
+         popei3.info <- tags$div(boxContent(title= "Estimated Firms Plot",
+                                             description = "The Estimated Firms Plot shows the relationship between firms, jobs and periods of economic recession from 2001 to the present.",
+                                             MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
+                                             urlList = list(c("Firms: Department of Labor and Employment Quarterly Census of Employment and Wages","https://www.colmigateway.com/gsipub/index.asp?docid=372"))),
+                                             tags$br(), downloadObjUI("popei3data"))
+
+         # Bind to boxes
+          popei1.box <- tabBox(width=12, height=500,
+                     tabPanel("Plot",renderPlotly({eiplot})),
+                     tabPanel("Sources and Downloads",popei1.info))
+          
+          popei2.box <- tabBox(width=12, height=500,
+                     tabPanel("Plot",renderPlotly({jobsplot})),
+                     tabPanel("Sources and Downloads",popei2.info))
+
+          popei3.box <- tabBox(width=12, height=500,
+                     tabPanel("Plot",renderPlotly({firmsplot})),
+                     tabPanel("Sources and Downloads",popei3.info))
+
  
           #Append to List
-          popei.list <<- list(popei1.box)
-         # popei.list <<- list(popei1.box,popei2.box,popei3.box,popei4.box)
+          popei.list <<- list(popei1.box,popei2.box,popei3.box)
           incProgress()
         }  #Employment by Industry
         
@@ -981,14 +1003,10 @@ server <- function(input, output, session) {
     callModule(downloadObj, id = "popt4data", simpleCap(input$unit),"popt4data", popt2$data)
     
     #Employment by Industry
-    callModule(downloadObj, id = "popei1plot", simpleCap(input$unit),"popei1plot", popei1$plot)
     callModule(downloadObj, id = "popei1data", simpleCap(input$unit),"popei1data", popei1$data)
-    callModule(downloadObj, id = "popei2plot", simpleCap(input$unit),"popei2plot", popei2$plot)
-    callModule(downloadObj, id = "popei2data", simpleCap(input$unit),"popei2data", popei2$data)
-    callModule(downloadObj, id = "popei3plot", simpleCap(input$unit),"popei3plot", popei3$plot)
-    callModule(downloadObj, id = "popei3data", simpleCap(input$unit),"popei3data", popei3$data1)
-    callModule(downloadObj, id = "popei4tabl", simpleCap(input$unit),"popei4tabl", popei3$FlexTable)
-    callModule(downloadObj, id = "popei4data", simpleCap(input$unit),"popei4data", popei3$data2)
+    callModule(downloadObj, id = "popei2data", simpleCap(input$unit),"popei2data", popei2$data1)
+    callModule(downloadObj, id = "popei3data", simpleCap(input$unit),"popei3data", popei3$data2)
+   
     
     #Employment and Demographic Forecast
     callModule(downloadObj, id = "popem1tabl", simpleCap(input$unit),"popem1tabl", popem1$FlexTable)
