@@ -51,7 +51,7 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
  }
   
   if(lvl == "Region to County"){
-
+browser()
    #Building regional data
    f.jobsindR <- data.frame()
   if(ctyname1 == "Denver PMSA") {
@@ -66,10 +66,11 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
          f.jobsindR <- bind_rows(f.jobsindR,f.jobsBase)
       }
     #Summarize record
-    f.jobsindR <- f.jobsindR %>% group_by(year) %>%
+    f.jobsindR <- f.jobsindR %>% group_by(population_year,datatype) %>%
         summarise(totaljobs = sum(totaljobs))
 
     f.jobsindR$county <- ctyname1
+    f.jobsindR$countyfips <- 1000
   }
    
   
