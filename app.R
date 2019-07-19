@@ -421,7 +421,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf","housing","emplind"))
+                          selected =  c("stats", "popf","housing","emplind","emply"))
     }
     if(input$level == "Region to County") {
       shinyjs::show("base")
@@ -436,7 +436,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf","housing","emplind"))
+                          selected =  c("stats", "popf","housing","emplind","emply"))
     }
     if(input$level == "County to County") {
       shinyjs::show("base")
@@ -451,7 +451,7 @@ server <- function(input, output, session) {
                                             "Housing and Households" = "housing",
                                             "Base Industries, Firms and Jobs"="emplind",
                                             "Labor Force Participation and Wage Information"="emply"),
-                          selected =  c("stats", "popf","housing","emplind"))
+                          selected =  c("stats", "popf","housing","emplind","emply"))
     }
     if(input$level == "Municipality to Municipality") {
       shinyjs::show("base")
@@ -829,64 +829,55 @@ server <- function(input, output, session) {
         #Employment and Demographic Forecast
         if("emply" %in% input$outChk){
           #Generate tables, plots and text...
-          popem1 <<- jobsPopForecast(DBPool=DOLAPool,listID=idList,curyr=curYr)
-          popem2 <<- weeklyWages(DBPool=DOLAPool,listID=idList,curyr=curYr)
-          popem3 <<- residentialLF(DBPool=DOLAPool,listID=idList,curyr=curYr)
-          popem4 <<- unemployment(DBPool=DOLAPool,listID=idList,curyr=curYr)  
+          popem1 <<- jobsPopForecast(DBPool=DOLAPool,lvl=input$level,listID=idList,curyr=curYr)
+          popem2 <<- weeklyWages(DBPool=DOLAPool,lvl=input$level,listID=idList,curyr=curYr)
+          popem3 <<- unemployment(DBPool=DOLAPool,lvl=input$level,listID=idList,curyr=curYr)  
           
+          plotem1 <- popem1$plot
+          plotem2 <- popem2$plot
+          plotem3 <- popem3$plot
           
           
           #Contents of Information Tabs
           popem1.info <- tags$div(boxContent(title= "Jobs and Population Forecast Table",
-                                             description = "The Jobs and Population Forecast Table displays the growth rate in local jobs and population.",
-                                             MSA= "F", stats = "F", muni = "T", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
+                                             description = "The Jobs Forecast Table displays the growth of local jobs by county.",
+                                             MSA= "F", stats = "F", muni = "T", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("SDO Economic Forecasts"," https://demography.dola.colorado.gov/economy-labor-force/economic-forecasts/#economic-forecasts"),
                                                             c("SDO Jobs Forecasts","https://demography.dola.colorado.gov/economy-labor-force/data/labor-force/#labor-force-participation"))),
                                   tags$br(),
-                                  downloadObjUI("popem1tabl"), downloadObjUI("popem1data"))
+                                  downloadObjUI("popem1data"))
           
           popem2.info <- tags$div(boxContent(title= "Average Weekly wages",
-                                             description = "The Average Weekly Wages plot shows the trend in average wages from 2010 to the present for a selected place and the state.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
+                                             description = "The Average Weekly Wages plot shows the trend in average wages from 2010 to the present for selected counties.",
+                                             MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("Department of Labor and Employment Quarterly Census of Employment and Wages","https://www.colmigateway.com/gsipub/index.asp?docid=372") )),
                                   tags$br(),
                                   downloadObjUI("popem2plot"),  downloadObjUI("popem2data"))
           
-          
-          popem3.info <- tags$div(boxContent(title= "Residential Labor Force Participation Line Plot",
-                                             description = "The Residential Labor Force Line plot shows the trend in total labor gorce participation from 2010 to the present for a selected place and the state.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
-                                             urlList = list(c("SDO Labor Force Participation Data","https://demography.dola.colorado.gov/economy-labor-force/data/labor-force/#labor-force-participation"))),
+          popem3.info <- tags$div(boxContent(title= "Unemployment Rates",
+                                             description = "The Unemployment rate plot shows undmployment by county. The grey boxes indicate periods of economic recession",
+                                             MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
+                                             urlList = list(c("United States Bureau of Economic Analysis.","https://www.bea.gov/") )),
                                   tags$br(),
-                                  downloadObjUI("popem3tabl"), downloadObjUI("popem3data"))
-          
-          popem4.info <- tags$div(boxContent(title= "Labor Force Participation and Unemployment Rates",
-                                             description = "The labor force participation and employment plot compares the percentage of persons age 16 and older in the labor force to the unemployment rate.",
-                                             MSA= "F", stats = "F", muni = "F", multiCty = idList$multiCty, PlFilter = idList$PlFilter, 
-                                             urlList = list( c("SDO County Single-Year of Age Forecasts","https://demography.dola.colorado.gov/population/data/sya-county/"),
-                                                         c("United States Bureau of Economic Analysis.","https://www.bea.gov/") )),
-                                  tags$br(),
-                                  downloadObjUI("popem4plot"),downloadObjUI("popem4data"))
+                                  downloadObjUI("popem3data"))
           
           
           # Bind to boxes
-          popem1.box <- tabBox(width=6, height=400,
-                               tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[76])))),
+          popem1.box <- tabBox(width=12, height=500,
+                               tabPanel("Plot",renderPlotly({plotem1})),
                                tabPanel("Sources and Downloads",popem1.info))
-          popem2.box <- tabBox(width=6, height=400,
-                               tabPanel("Plot",renderImage({img_List18})),
+          popem2.box <- tabBox(width=12, height=500,
+                               tabPanel("Plot",renderPlotly({plotem2})),
                                tabPanel("Sources and Downloads",popem2.info))
-          popem3.box <- tabBox(width=6, height=400,
-                               tabPanel("Table",tags$div(class="cleanTab",HTML(dget(fileMat[82])))),
+          popem3.box <- tabBox(width=12, height=500,
+                               tabPanel("Plot",renderPlotly({plotem3})),
                                tabPanel("Sources and Downloads",popem3.info))
-          popem4.box <- tabBox(width=6, height=400,
-                               tabPanel("Plot",renderImage({img_List19})),
-                               tabPanel("Sources and Downloads",popem4.info))
+         
           
           
           #Append to List
      
-          popem.list <<- list(popem1.box,popem3.box,popem2.box,popem4.box) 
+          popem.list <<- list(popem1.box,popem2.box,popem3.box) 
           incProgress()
         }  #Employment and Demographic Forecast
         
