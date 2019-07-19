@@ -8,99 +8,130 @@
 #' @export
 #'
 
-weeklyWages <- function(DBPool,listID, curyr,base=10){
+weeklyWages <- function(DBPool,lvl, listID, curyr,base=10){
   
-  ctyfips <- listID$ctyNum
-  ctyname <- listID$ctyName
-  placefips <- listID$plNum
-  placename <- listID$plName
+  ctyfips1 <- listID$ctyNum1
+  ctyname1 <- listID$ctyName1
   
-
-  wagePLSQL <- paste0("SELECT * FROM estimates.weekly_wages WHERE fips = '",as.numeric(ctyfips), "';")
-  wageSTSQL <- paste0("SELECT * FROM estimates.weekly_wages WHERE fips = '0';")
-
+  ctyfips2 <- listID$ctyNum2
+  ctyname2 <- listID$ctyName2
   
-  # Read data files
-
-  f.wagePL <- dbGetQuery(DBPool, wagePLSQL)
-  f.wageST <- dbGetQuery(DBPool, wageSTSQL)
-
-
-  # Place data
-  f.wagePL$wages <- as.numeric(f.wagePL$weekly_wage)
+  placefips1 <- listID$plNum1
+  placename1 <- listID$plName1
   
-  f.wagePL$fmt_wages <- paste0("$", formatC(as.numeric(f.wagePL$wages), format="f", digits=0, big.mark=","))
-  f.wagePL <- f.wagePL[which(f.wagePL$year >= 2001),]
-  f.wagePL <- f.wagePL[which(f.wagePL$wages != 0),]
-  f.wagePL$geoname <- ctyname
+  placefips2 <- listID$plNum2
+  placename2 <- listID$plName2
+  
+  #fips is the 3-digit character string
 
-  # State data
-  f.wageST$wages <- as.numeric(f.wageST$weekly_wage)
-  f.wageST$fmt_wages <- paste0("$", formatC(as.numeric(f.wageST$wages), format="f", digits=0, big.mark=","))
-  f.wageST <- f.wageST[which(f.wageST$year >= 2001),]
-  f.wageST$geoname <- "Colorado"
+ if(lvl == "Regional Summary") {
+   f.wages <- data.frame()
+   for(i in 1:length(ctyfips1)){
+    wagePLSQL <- paste0("SELECT fips, geoname, year, weekly_wage FROM estimates.weekly_wages WHERE fips = ",as.numeric(ctyfips1[i]), ";")
+    f.wagePL <- dbGetQuery(DBPool, wagePLSQL)
+    f.wages <- bind_rows(f.wages,f.wagePL)
+   }
+  grTitle <- paste0("Average Weekly Wage: ",ctyname1)
+}
 
-  #Preparing the Plot
+if(lvl == "Region to County"){
 
-  f.plot <- rbind(f.wagePL, f.wageST)
+   #Building regional data
+   f.wagesR <- data.frame()
+   f.popR <- data.frame()
+   for(i in 1:length(ctyfips1)) {
+     #Wages data
+      wagePLSQL <- paste0("SELECT fips, geoname, year, weekly_wage FROM estimates.weekly_wages WHERE fips = ",as.numeric(ctyfips1[i]), ";")
+      f.wagePL <- dbGetQuery(DBPool, wagePLSQL)
+      f.wagesR <- bind_rows(f.wagesR,f.wagePL)
+     
+     # Population data
+      popSQL <- paste0("SELECT countyfips, year, totalpopulation FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i]), " and placefips = 0;")
+      f.popPL <- dbGetQuery(DBPool,popSQL)
+      f.popR <- bind_rows(f.popR,f.popPL)
+   }
+   
+   # Combining wage and population
+   
+   
+   f.wagepop <- inner_join(f.wagesR,f.popR, by=c("fips" = "countyfips","year" = "year"))
+   f.wagepop$wagetot <- f.wagepop$weekly_wage * f.wagepop$totalpopulation
+     
+   f.wagesR <- f.wagepop %>% group_by(year) %>%
+        summarise(tot_pop = sum(totalpopulation),
+                  weekly_sum = sum(wagetot)) 
+   
+   f.wagesR$weekly_wage = round(f.wagesR$weekly_sum/f.wagesR$tot_pop,digits=0)
+   
+   f.wagesR$geoname <- ctyname1
+   f.wagesR$fips <- 1000
+   
+   #Building County data
+   
+   f.wagesC <- data.frame()
+    for(i in 1:length(ctyfips2)) {
+        wagePLSQL <- paste0("SELECT fips, geoname, year, weekly_wage FROM estimates.weekly_wages WHERE fips = ",as.numeric(ctyfips2[i]), ";")
+        f.wageBase <- dbGetQuery(DBPool, wagePLSQL)
+        f.wagesC <- bind_rows(f.wagesC,f.wageBase)
+      }
+     
+    
+    f.wages <- bind_rows(f.wagesR[,c(6,1,5,4)],f.wagesC[,c(1,3,2,4)])
+    
+    revCty <- toString(ctyname2,sep=', ')
+    grTitle <- paste0("Average Weekly Wages: ",revCty, " compared to ",ctyname1)
+}
 
-  maxYr <- as.numeric(max(f.plot$year))
-  f.plot <- f.plot[which(f.plot$year %in% seq(2001,maxYr,2)),]
+  if(lvl == "County to County") {
+    ctyfips <- c(ctyfips1, ctyfips2)
+    ctyname <- c(ctyname1, ctyname2)
+    
+  
+    f.wages <- data.frame()
+    for(i in 1:length(ctyfips)) {
+        wagePLSQL <- paste0("SELECT fips, geoname, year, weekly_wage FROM estimates.weekly_wages WHERE fips = ",as.numeric(ctyfips[i]), ";")
+        f.wageBase <- dbGetQuery(DBPool, wagePLSQL)
+        f.wages <- bind_rows(f.wages,f.wageBase)
+      }
 
-  axs <- setAxis(f.plot$wages)
-  axs$maxBrk <- axs$maxBrk + 50
 
-  f.plot$geoname <- factor(f.plot$geoname,levels=c(ctyname,"Colorado"))
+     revCty <- toString(ctyname2,sep=', ')
+    grTitle <- paste0("Average Weekly Wages: ",revCty, " compared to ",ctyname1)
+  }
  
+ #Fixing data for Broomfield
+ f.wages$weekly_wage <- ifelse(f.wages$fips == 14 & f.wages$year <= 2001, NA,f.wages$weekly_wage)
+  
+    # Setting axis labels 
+ x  <- list(title = "")
+ y1 <- list(title = "Average Weekly Wage", tickformat= "$")
 
-  pltTitle <- paste0("Average Weekly Wage,\nin Real (",max(f.plot$year),") Dollars")
-  f.plot$year <- factor(f.plot$year,labels=c("2001","2003", "2005",
-                                              "2007","2009",
-                                              "2011","2013","2015",
-                                              "2017"))
-  
-  Plot <- f.plot %>%
-    ggplot(aes(x=year, y=wages, colour=geoname, group=geoname))+
-    geom_line(size=1.5) + geom_point(size=2.5) +
-    scale_colour_manual("Geography", values=c("#6EC4E8", "#00953A")) +
-    geom_text(mapping=aes(x=year, y=wages, label=fmt_wages),
-              vjust = -0.75, size = 4,  colour="black",
-              position = position_dodge(width = 1),
-              inherit.aes = TRUE) +
-    scale_y_continuous(limits=c(axs$minBrk,axs$maxBrk), label=dollar)+
-    scale_x_discrete() +
-    scale_fill_manual(values=c("#6EC4E8","#00953A"),
-                      name="Geography")+
-    theme_codemog(base_size=base)+
-    labs(title = pltTitle,
-         subtitle = ctyname,
-         caption = captionSrc("QCEW",""),
-         x = "Year",
-         y= "Average Weekly Wage") +
-    theme(plot.title = element_text(hjust = 0.5, size=16),
-          panel.background = element_rect(fill = "white", colour = "gray50"),
-          panel.grid.major = element_line(colour = "gray80"),
-          panel.grid.major.y = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          axis.text = element_text(size=12),
-          legend.position= "bottom")
-  
-  f.wages <- left_join(f.wagePL,f.wageST,by="year")
-  f.wages <- f.wages[,c(3,6,11)]
-  names(f.wages) <- c("Year",paste0(" Average Weekly Wage: ",ctyname), "Average Weekly Wage: Colorado")
-
-  
-  # Text
-  OutText <- paste0("The inflation adjusted (real) average weekly wages for ",ctyname," and Colorado are shown here.")
-  OutText <- paste0(OutText," In 2016 dollars, wages in Colorado have been essentially unchanged since 2010.")
-  OutText <- paste0(OutText," The gain or loss of a major employer such as a mine or a hospital can have a significant impact on a county’s average weekly wage.")
-  OutText <- paste0(OutText," These wages are shown only for jobs located within that county and do not include most proprietors.")
-  OutText <- paste0(OutText," Household income can be influenced by the average weekly wage, but in areas that have")
-  OutText <- paste0(OutText," considerable amounts commuting or unearned income this relationship is not particularly strong.")
-  
-  
-  outList <- list("plot" = Plot, "data" = f.wages, "text" = OutText)
+ 
+ # Legend
+ l <- list(
+    font = list(
+      family = "sans-serif",
+      size = 12,
+      color = "#000"),
+    bg_color = "#DCDCDC",
+    orientation = "h",
+    bordercolor = "#FFFFFF",
+    borderwidth = 2)
 
 
+wageplot <-  plot_ly(x=f.wages$year, y=f.wages$weekly_wage, 
+                      type="scatter",mode='lines', color=f.wages$geoname,
+                      transforms = list( type = 'groupby', groups = f.wages$geoname),
+                      hoverinfo = "text",
+                      text = ~paste0(f.wages$geoname, "<br>", f.wages$year,": ", paste0("$", formatC(f.wages$weekly_wage, format="f", digits=2, big.mark=",")))) %>% 
+               layout(title = grTitle,
+                        xaxis = x,
+                        yaxis = y1,
+                      legend = l,
+                      hoverlabel = "right")
+
+  
+  outList <- list("plot"= wageplot, "data" = f.wages)
+  
   return(outList)
 }

@@ -9,144 +9,173 @@
 #' @return ggplot2 graphic, a html or latex table and a dataset
 #' @export
 
-jobsPopForecast <- function(DBPool,listID, curyr, base=10){
+jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
+
+     # Collecting place ids from  idList, setting default values
+  PMSA <- c("001", "005", "013", "014", "031", "035", "059")
+  PMSANames <- c("Adams County","Arapahoe County","Boulder County","Broomfield County",
+              "Denver County","Douglas County","Jefferson County")
+
   
-  ctyfips <- listID$ctyNum
-  ctyname <- listID$ctyName
-  placefips <- listID$plNum
-  placename <- listID$plName
+  ctyfips1 <- listID$ctyNum1
+  ctyname1 <- listID$ctyName1
   
+  ctyfips2 <- listID$ctyNum2
+  ctyname2 <- listID$ctyName2
+  
+  placefips1 <- listID$plNum1
+  placename1 <- listID$plName1
+  
+  placefips2 <- listID$plNum2
+  placename2 <- listID$plName2
   
   #fips is the 3-digit character string
 
-  # creating alternative fips code for Denver MSA
-  if(ctyfips %in% c("001", "005", "013", "014", "031", "035", "059")) {
-    ctyfips = "500"
-    MSAList <- c(1,5,13,14,31,35,59)
-    ctyname = "Denver-Boulder MSA"
+ if(lvl == "Regional Summary") { 
+
+  f.jobsind <- data.frame()
+  if(ctyname1 == "Denver PMSA") {
+     jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast where countyfips= 500;")
+     f.jobsind <- dbGetQuery(DBPool, jobsSQL)
+     f.jobsind$county <- ctyname1 
   } else {
-    MSAList <- as.numeric(ctyfips)
+      for(i in 1:length(ctyfips1)) {
+         jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips1[i]), ";")
+         f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
+         f.jobsBase$county <- CountyName(paste0("08",ctyfips1[i]))  # Adding County name
+         f.jobsind <- bind_rows(f.jobsind,f.jobsBase)
+      }
   }
 
-  jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = '",as.numeric(ctyfips), "';")
+  grTitle <- paste0("Jobs Estimate and Forecast: ",ctyname1)
+ }
   
-  f.totalJobs <- dbGetQuery(DBPool, jobsSQL)
+  if(lvl == "Region to County"){
 
+   #Building regional data
+   f.jobsindR <- data.frame()
+  if(ctyname1 == "Denver PMSA") {
+     jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast where countyfips = 500;")
+     f.jobsindR <- dbGetQuery(DBPool, jobsSQL)
+     f.jobsindR$county <- ctyname1 
+  } else {
+      for(i in 1:length(ctyfips1)) {
+         jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips1[i]), ";")
+         f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
+         f.jobsBase$county <- CountyName(paste0("08",ctyfips1[i]))  # Adding County name
+         f.jobsindR <- bind_rows(f.jobsindR,f.jobsBase)
+      }
+    #Summarize record
+    f.jobsindR <- f.jobsindR %>% group_by(year) %>%
+        summarise(totaljobs = sum(totaljobs))
 
-  f.totalJobs$type <- "Jobs"
-
-  # Gathering population data
-  f.Pop =county_sya(MSAList, 1990:2040,"totalpopulation")
-  f.Pop$totalpopulation <- as.numeric(f.Pop$totalpopulation)
-  f.totalPop <- f.Pop %>%
-    group_by(year, datatype) %>%
-    summarize(TotalPop = sum(totalpopulation))
-  f.totalPop$type <- "Population"
-
-
-  f.totalJobs <- f.totalJobs[,c(3,4)]
-  names(f.totalJobs) <- c("year","Jobs")
-
-  f.totalPop <- f.totalPop[,c(1,3)]
-  names(f.totalPop) <- c("year","Population")
-  f.plotdata <- left_join(f.totalJobs,f.totalPop,by="year")
- 
-  f.plotdata$Series <-  ifelse(f.plotdata$year > curyr,"Forecast","Estimate")
-
-  f.plotdata <- f.plotdata[which(f.plotdata$year >= 2010 & f.plotdata$year <= 2040),]
-  f.plotdata$JobGrowth <- percent(signif((((f.plotdata$Jobs/lag(f.plotdata$Jobs))^(1/(f.plotdata$year-lag(f.plotdata$year)))) -1)*100),digits=1)
-  f.plotdata$PopGrowth <- percent(signif((((f.plotdata$Population/lag(f.plotdata$Population))^(1/(f.plotdata$year-lag(f.plotdata$year)))) -1)*100),digits=1)
+    f.jobsindR$county <- ctyname1
+  }
+   
   
-  f.plotdata$JobGrowth <- gsub("NA%","",f.plotdata$JobGrowth)
-  f.plotdata$PopGrowth <- gsub("NA%","",f.plotdata$PopGrowth)
-  
-  f.plotdata$Jobs <- format(round(f.plotdata$Jobs,digits=0),big.mark=",",scientific=FALSE)
-  f.plotdata$Population <- format(round(f.plotdata$Population,digits=0),big.mark=",",scientific=FALSE)
-
-  
-  f.plotdata <-  f.plotdata[,c(1,4,2,5,3,6)]
-  
-  #Producing the tables
-  names(f.plotdata) <- c("Year","Type", "Jobs", "Annual Growth Rate: Jobs","Population","Annual Growth Rate: Population")
-  
-  
-  
-  
-  
-  m.forecast <- as.matrix(f.plotdata[seq(1, nrow(f.plotdata), 5), ])
- 
-  f.flex <- as.data.frame(m.forecast)
-  
-  # set vector names
-  tblHead <- c(ctyname = 6)
-  names(tblHead) <- ctyname
-  
-  names_spaced <- c("Year","Type", "Jobs", "Annual Growth Rate: Jobs","Population","Annual Growth Rate: Population")
-  
-  tabHTML <- m.forecast %>%
-    kable(format='html', table.attr='class="cleanTable"',
-          digits=1,
-          row.names=FALSE,
-          align="llrrrr",
-          caption="Jobs and Population Forecast",
-          col.names = names_spaced,
-          escape = FALSE)  %>%
-    kable_styling(bootstrap_options = "condensed",full_width = F,font_size = 12) %>%
-    column_spec(1, width="0.5in") %>%
-    column_spec(2, width="0.5in") %>%
-    column_spec(3, width="0.5in") %>%
-    column_spec(4, width="0.5in") %>%
-    column_spec(5, width="0.5in") %>%
-    column_spec(6, width="0.5in") %>%
-    add_header_above(header=tblHead) %>%
-    footnote(captionSrc("SDO",""))
-  
-  
-  #LATEX Table
-  # set vector names
-  tabLATEX <- kable(m.forecast, col.names = names_spaced,
-                    caption="Jobs and Population Forecast", 
-                    row.names=FALSE, align="llrrrrr",
-                    format="latex", booktabs=TRUE)  %>%
-    kable_styling(latex_options="HOLD_position") %>%
-    column_spec(1, width="0.5in") %>%
-    column_spec(2, width="0.5in") %>%
-    column_spec(3, width="0.5in") %>%
-    column_spec(4, width="0.5in") %>%
-    column_spec(5, width="0.5in") %>%
-    column_spec(6, width="0.5in") %>%
-    add_header_above(header=tblHead) %>%
-    footnote(captionSrc("SDO",""),threeparttable = T) 
-  
-  #Flextable
-  
-  FlexOut <- regulartable(f.flex) %>% 
-    add_header(Year=paste0("Jobs and Population Forecast: ",ctyname),top=TRUE) %>%
-    add_footer(Year=captionSrc("SDO","")) %>%
-    merge_at(i=1,j=1:6,part="header") %>%
-    merge_at(i=1,j=1:6,part="footer") %>%
-    align(i=1, j=1, align="left",part="header") %>%
-    width(j=1:6, width=1.0) 
-  
+   #Building County data
+   
+   ctyfips2 <- ctyfips2[which(!ctyfips2 %in% PMSA )]
+   ctyname2 <- ctyname2[which(!ctyname2 %in% PMSANames)]
+   
+   f.jobsindC <- data.frame()
+    for(i in 1:length(ctyfips2)) {
+         jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips2[i]), ";")
+         f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
+         f.jobsBase$county <- CountyName(paste0("08",ctyfips2[i]))  # Adding County name
+         f.jobsindC <- bind_rows(f.jobsindC,f.jobsBase)
+      }
+     
     
+    f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
+ 
+    revCty <- toString(ctyname2,sep=', ')
+    grTitle <- paste0("Jobs Estimate and Forecast: ",revCty, " compared to ",ctyname1)
+}
 
-  # producing the Dataset
-
-  f.flex$geoname <- ctyname
-  f.flex <- f.flex[,c(7,1:6)]
-  names(f.flex) <- c("Place", "Year","Type", "Jobs", "Annual Growth Rate: Jobs","Population","Annual Growth Rate: Population")
-  
-
-#Text
-  OutText <- paste0("The total jobs forecast and population forecast are for ",ctyname," shown here.")
-  OutText <- paste0(OutText,"  The two lines diverge over time due to the aging of our population and continued growth in our under 18 population – two segments of the population that are less likely to be employed.")
-  OutText <- paste0(OutText," Growth in the 65 plus population in the labor force through 2040 compared to the universe population of those over the age of 16 since labor force participation declines with age,")
-  OutText <- paste0(OutText," especially among those eligible for pensions or social security.")
-  if(ctyname == "Denver-Boulder MSA"){
-    OutText <- paste0(OutText," Note: Statistics for the counties in the Denver Metropolitan Statistical Area (Adams, Arapahoe, Boulder, Broomfield, Denver, Douglas and Jefferson) are combined in this section.") 
+  if(lvl == "County to County") {
+    # Selecting out records 
+    if((ctyfips1 %in% PMSA) || (ctyfips2 %in% PMSA)) {
+            jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast where countyfips = 500;")
+            f.jobsindR <- dbGetQuery(DBPool, jobsSQL)
+            f.jobsindR$county <- "Denver PMSA"  # Adding County name
+    }
+    
+    ctyfips <- c(ctyfips1[which(!ctyfips1 %in% PMSA)], ctyfips2[which(!ctyfips2 %in% PMSA )])
+    ctynames <- c(ctyfips1[which(!ctyname1 %in% PMSANames)], ctyname2[which(!ctyname2 %in% PMSANames )])
+    # Adjustment for ctyname1
+    if(ctyname1 %in% PMSANames) {
+      ctyname1 <- paste0(ctyname1,"/Denver PMSA")
+    }
+      #Building County data
+   f.jobsindC <- data.frame()
+    for(i in 1:length(ctyfips)) {
+        jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips[i]), ";")
+         f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
+         f.jobsBase$county <- CountyName(paste0("08",ctyfips[i]))  # Adding County name
+         f.jobsindC <- bind_rows(f.jobsindC,f.jobsBase)
+      }
+     
+    
+    if(exists("f.jobsindR")) {
+      f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
+    } else {
+      f.jobsind <- f.jobsindC
+    }
+    
+    
+     revCty <- toString(ctynames,sep=', ')
+    grTitle <- paste0("Jobs Estimate and Forecast: ",revCty, " compared to ",ctyname1)
   }
+
+
+  f.plotdata <- f.jobsind
+ 
+  f.plotdata <- f.plotdata[which(f.plotdata$population_year >= 2010 & f.plotdata$population_year <= 2040),]
+  f.plotdata$totaljobs <- round(f.plotdata$totaljobs,digits=0)
+ 
   
-  outList <- list("Htable"= tabHTML,"Ltable" = tabLATEX , "FlexTable" = FlexOut, "data" = f.flex,"text" = OutText)
+ f.plotest <-  f.plotdata[which(f.plotdata$datatype == "ESTIMATE"),] 
+ f.plotfore <-  f.plotdata[which(f.plotdata$datatype == "FORECAST"),] 
+
+  f.plotest$datatype <- simpleCap(f.plotest$datatype) 
+  f.plotfore$datatype <- simpleCap(f.plotfore$datatype)
+  
+   # Setting axis labels 
+ x  <- list(title = "")
+ y1 <- list(title = "Total Jobs")
+
+ 
+ # Legend
+ l <- list(
+    font = list(
+      family = "sans-serif",
+      size = 12,
+      color = "#000"),
+    bg_color = "#DCDCDC",
+    orientation = "h",
+    bordercolor = "#FFFFFF",
+    borderwidth = 2)
+
+
+jobsplot <-  plot_ly(x=f.plotest$population_year, y=f.plotest$totaljobs, 
+                      type="scatter",mode='lines', color=f.plotest$county,
+                      transforms = list( type = 'groupby', groups = f.plotest$county),
+                      hoverinfo = "text",
+                      text = ~paste0(f.plotest$county, "<br>", f.plotest$population_year,": ", format(f.plotest$totaljobs, scientific=FALSE,big.mark = ","),"<br>", f.plotest$datatype)) %>% 
+               add_lines(x=f.plotfore$population_year, y=f.plotfore$totaljobs, 
+                      type="scatter",mode='lines', color=f.plotfore$county, line = list(dash="dash"),
+                      transforms = list(type = 'groupby', groups = f.plotfore$county),
+                      hoverinfo = "text",
+                      text = ~paste0(f.plotfore$county, "<br>", f.plotfore$population_year,": ", format(f.plotfore$totaljobs, scientific=FALSE,big.mark = ","),"<br>",f.plotfore$datatype), showlegend=FALSE) %>%
+               layout(title = grTitle,
+                        xaxis = x,
+                        yaxis = y1,
+                      legend = l,
+                      hoverlabel = "right")
+
+  
+  outList <- list("plot"= jobsplot, "data" = f.plotdata)
 
 
   return(outList)
