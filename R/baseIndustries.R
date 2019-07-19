@@ -109,9 +109,13 @@ if(lvl == "Region to County"){
          f.jobsindC <- bind_rows(f.jobsindC,f.jobsBase)
       }
      
-    f.jobsindC <-  distinct(f.jobsindC,fips, .keep_all = TRUE)
+    if(exists("f.jobsindR")) {
+      f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
+    } else {
+      f.jobsind <- f.jobsindC
+    }
     
-    f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
+    
     
      revCty <- toString(ctynames,sep=', ')
     grTitle <- paste0(curyr, " Base Industries (without Indirect): ",revCty, " compared to ",ctyname1)
