@@ -12,6 +12,9 @@
 baseIndustries <- function(DBPool,lvl,listID, curyr, oType,base=10){
   
   PMSA <- c("001", "005", "013", "014", "031", "035", "059")
+  PMSANames <- c("Adams County","Arapahoe County","Boulder County","Broomfield County",
+              "Denver County","Douglas County","Jefferson County")
+  
    # Collecting place ids from  idList, setting default values
   
   ctyfips1 <- listID$ctyNum1
@@ -63,23 +66,26 @@ if(lvl == "Region to County"){
     f.jobsindR$cname <- ctyname1
     f.jobsindR <- f.jobsindR[,c(31:34,1:30)]
   }
- 
+   
+  
    #Building County data
+   
+   ctyfips2 <- ctyfips2[which(!ctyfips2 %in% PMSA )]
+   ctyname2 <- ctyname2[which(!ctyname2 %in% PMSANames)]
+   
    f.jobsindC <- data.frame()
     for(i in 1:length(ctyfips2)) {
-       if(ctyfips2[i] %in% c("001", "005", "013", "014", "031", "035", "059")) {
-            jobsSQL <- paste0("SELECT * FROM estimates.base_analysis where fips = '500';")
-       } else {
          jobsSQL <- paste0("SELECT * FROM estimates.base_analysis WHERE fips = '",ctyfips2[i], "';")
-       } 
          f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
          f.jobsindC <- bind_rows(f.jobsindC,f.jobsBase)
       }
      
     f.jobsindC <-  distinct(f.jobsindC,fips, .keep_all = TRUE)
-    
+ 
     f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
-    grTitle <- paste0(curyr, " Base Industries (without Indirect): ",ctyname2, " compared to ",ctyname1)
+    
+    revCty <- toString(ctyname2,sep=', ')
+    grTitle <- paste0(curyr, " Base Industries (without Indirect): ",revCty, " compared to ",ctyname1)
 }
 
   if(lvl == "County to County") {
@@ -90,6 +96,11 @@ if(lvl == "Region to County"){
     }
     
     ctyfips <- c(ctyfips1[which(!ctyfips1 %in% PMSA)], ctyfips2[which(!ctyfips2 %in% PMSA )])
+    ctynames <- c(ctyfips1[which(!ctyname1 %in% PMSANames)], ctyname2[which(!ctyname2 %in% PMSANames )])
+    # Adjustment for ctyname1
+    if(ctyname1 %in% PMSANames) {
+      ctyname1 <- paste0(ctyname1,"/Denver PMSA")
+    }
       #Building County data
    f.jobsindC <- data.frame()
     for(i in 1:length(ctyfips)) {
@@ -101,7 +112,9 @@ if(lvl == "Region to County"){
     f.jobsindC <-  distinct(f.jobsindC,fips, .keep_all = TRUE)
     
     f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
-    grTitle <- paste0(curyr, " Base Industries (without Indirect): ",ctyname2, " compared to ",ctyname1)
+    
+     revCty <- toString(ctynames,sep=', ')
+    grTitle <- paste0(curyr, " Base Industries (without Indirect): ",revCty, " compared to ",ctyname1)
   }
   
   # convert datasets to long

@@ -111,9 +111,11 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
      
      jobs_data <- jobs_data[which(!is.na(jobs_data$jobs)),]
      firms_data <- subset(firms_data, (!is.na(firms_data$firms)))
+     
+     revCty <- toString(ctyname2,sep=', ')
     
-     grTit1 <- paste0("Estimated Jobs: ",ctyname2, " compared to ",ctyname1)
-     grTit2 <- paste0("Estimated Firms: ",ctyname2, " compared to ",ctyname1)
+     grTit1 <- paste0("Estimated Jobs: ",revCty, " compared to ",ctyname1)
+     grTit2 <- paste0("Estimated Firms: ",revCty, " compared to ",ctyname1)
  }
   
  if(lvl == "County to County"){
@@ -141,9 +143,11 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
     counties <- unique(firms_data[,c(1,2)])
     names(counties) <- c("area_code","geoname")
     jobs_data <- inner_join(jobs_data,counties, by="area_code")
+    
+     revCty <- toString(ctyname2,sep=', ')
   
-     grTit1 <- paste0("Estimated Jobs: ",ctyname2, " compared to ",ctyname1)
-     grTit2 <- paste0("Estimated Firms: ",ctyname2, " compared to ",ctyname1)
+     grTit1 <- paste0("Estimated Jobs: ",revCty, " compared to ",ctyname1)
+     grTit2 <- paste0("Estimated Firms: ",revCty, " compared to ",ctyname1)
  } 
   
  
