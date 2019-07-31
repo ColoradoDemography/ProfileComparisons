@@ -53,51 +53,24 @@ library('config')
 source("R/CountyName.R")
 source("R/CountyRank.R")
 source("R/MunicipalRank.R")
-source("R/ageForecastPRO.R")
-source("R/agePlotPRO.R")
 source("R/baseIndustries.R")
 source("R/boxContent.R")
-source("R/captionSrc.R")
 source("R/chkID.R")
-source("R/cocPlot.R")
-source("R/codemog_cdp.r")
 source("R/dashboardMAP.R")
 source("R/downloadObj.R")
 source("R/downloadObjUI.R")
-source("R/educPRO.R")
-source("R/GenerateVenn.R")
-source("R/houseEstPRO.R")
 source("R/housePRO.R")
-source("R/HouseVal.R")
-source("R/incomePRO.R")
-source("R/incomeSrc.R")
-source("R/jobMigration.R")
-source("R/jobsByIndustry.R")
 source("R/jobsPlot.R")
 source("R/jobsPopForecast.R")
 source("R/listTofips.R")
-source("R/medianAgeTab.R")
-source("R/migbyagePRO.R")
-source("R/HousingUnits.R")
 source("R/percent.R")
-source("R/pop_timeseries.R")
-source("R/popForecast.R")
 source("R/popPlace.R")
 source("R/popPlotly.R")
-source("R/raceTab1.R")
-source("R/raceTab2.R")
-source("R/residentialLF.R")
-source("R/roundUpNice.R")
-source("R/setAxis.R")
-source("R/setYrRange.R")
 source("R/simpleCap.R")
 source("R/statsTable1.R")
 
-source("R/submitPush.R")
-source("R/submitReport.R")
 source("R/tabList.R")
 source("R/tabTitle.R")
-source("R/TempFil.R")
 source("R/weeklyWages.R")
 source("R/unemployment.R")
 
@@ -161,52 +134,26 @@ ctyRank.list <<- list()
 #Basic Statistics
 stats.list <<- list()
 
-# Population Change
-popa1 <<- list()
-popa2 <<- list()
-popa3 <<- list()
-popa4 <<- list()
-popa.list <<- list()
 
 #Population Forecast
 popf1 <<- list()
-popf2 <<- list()
-popf3 <<- list()
-popf4 <<- list()
 popf.list <<- list()
 
 
-#Population Characteristics
-popc1 <<- list()
-popc2 <<- list()
-popc3 <<- list()
-popc4 <<- list()
-popc.list <<- list()
-
 #Housing and Household Characteristics
-poph1 <<- list()
 poph2 <<- list()
-poph3 <<- list()
-poph4 <<- list()
-poph5 <<- list() # Housing Values
 poph.list <<- list()
 
-#Commuting (Transit)
-popt1 <<- list()
-popt2 <<- list()  # This is for the jobs and Migration chart
-popt.list <<- list()
 
 #Employment by Industry
 popei1 <<- list()
 popei2 <<- list()
-popei3 <<- list()
 popei.list <<- list()
 
 #Employment and Demographic Forecast
 popem1 <<- list()
 popem2 <<- list()
 popem3 <<- list()
-popem4 <<- list()
 popem.list <<- list()
 
 
@@ -475,10 +422,7 @@ server <- function(input, output, session) {
   # Event for click on profile button
   observeEvent(input$profile,  {
     
-
- #   dLout <- submitPush(input$level,input$unit,input$outChk)  # Generate dataLayer Command
- #   session$sendCustomMessage("handler1",dLout)  #Sends dataLayer command to dataL.js script
-   
+  
     outputList <<- list()
     output$ui <- renderUI(outputList)
   
@@ -650,7 +594,9 @@ server <- function(input, output, session) {
        
           # Output DT Table
           
-           output$StatTabOut <- DT::renderDataTable(stat_List,
+          outTab <- stat_List$data
+          
+           output$StatTabOut <- DT::renderDataTable(outTab,
                                                    options = list(pageLength = 9,
                                                                   autowidth= TRUE,
                                                                   scrollX = TRUE,
@@ -696,7 +642,7 @@ server <- function(input, output, session) {
           outplotp1 <- popf1$plot1
           outplotp2 <- popf1$plot2
           outplotp3 <- popf1$plot3
-          
+
           #infobox Objects
             popf1.info <- tags$div(boxContent(title= "Population Estimates and Forecasts",
                                               description = "The Population Estimates and Forecast Plot provides population estimates derived from SDO Single Year of Age data.",
@@ -747,19 +693,35 @@ server <- function(input, output, session) {
           outploth2 <- poph2$plot2
           outploth3 <- poph2$plot3
           
+          poph1.info <- tags$div(boxContent(title= "Housing Type Plots",
+                                            description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
+                                            MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
+                                            urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
+                                                           c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
+                                 tags$br(),
+                                 downloadObjUI("poph1data"))
+          
           poph2.info <- tags$div(boxContent(title= "Housing Type Plots",
                                             description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
                                             MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
                                             urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
                                                            c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
                                  tags$br(),
-                                 downloadObjUI("poph2tabl"),downloadObjUI("poph2data"))
+                                 downloadObjUI("poph2data"))
+          
+           poph3.info <- tags$div(boxContent(title= "Housing Type Plots",
+                                            description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
+                                            MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
+                                            urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
+                                                           c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
+                                 tags$br(),
+                                 downloadObjUI("poph3data"))
           
 
           # Bind to boxes
           poph1.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outploth1})),
-                              tabPanel("Sources and Downloads",poph2.info))
+                              tabPanel("Sources and Downloads",poph1.info))
           
           poph2.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outploth2})),
@@ -767,7 +729,7 @@ server <- function(input, output, session) {
         
           poph3.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outploth3})),
-                              tabPanel("Sources and Downloads",poph2.info))
+                              tabPanel("Sources and Downloads",poph3.info))
           
           
           #Append to List
@@ -839,8 +801,8 @@ server <- function(input, output, session) {
           
           
           #Contents of Information Tabs
-          popem1.info <- tags$div(boxContent(title= "Jobs and Population Forecast Table",
-                                             description = "The Jobs Forecast Table displays the growth of local jobs by county.",
+          popem1.info <- tags$div(boxContent(title= "Jobs Estimates and Forecast Plot",
+                                             description = "The Jobs Estimates and Forecast Plot displays the growth of local jobs by county.",
                                              MSA= "F", stats = "F", muni = "T", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("SDO Economic Forecasts"," https://demography.dola.colorado.gov/economy-labor-force/economic-forecasts/#economic-forecasts"),
                                                             c("SDO Jobs Forecasts","https://demography.dola.colorado.gov/economy-labor-force/data/labor-force/#labor-force-participation"))),
@@ -852,7 +814,7 @@ server <- function(input, output, session) {
                                              MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
                                              urlList = list(c("Department of Labor and Employment Quarterly Census of Employment and Wages","https://www.colmigateway.com/gsipub/index.asp?docid=372") )),
                                   tags$br(),
-                                  downloadObjUI("popem2plot"),  downloadObjUI("popem2data"))
+                                  downloadObjUI("popem2data"))
           
           popem3.info <- tags$div(boxContent(title= "Unemployment Rates",
                                              description = "The Unemployment rate plot shows undmployment by county. The grey boxes indicate periods of economic recession",
@@ -921,96 +883,31 @@ server <- function(input, output, session) {
     callModule(downloadObj, id = "munidata", "", "munidata", MuniRank$data)
     
     #Basic Statistics
-    callModule(downloadObj, id = "statstabl", simpleCap(placeName), "statstabl", stat_List$FlexTable)
-    callModule(downloadObj, id = "statsplot", simpleCap(placeName), "statsplot", stat_map)
+    callModule(downloadObj, id = "statstabl", simpleCap(placeName), "statstabl", stat_List$data)
+    
     
     #Population Forecast
     
-    callModule(downloadObj, id = "popf1tabl", simpleCap(input$unit), "popf1tabl", popf1$FlexTable)
-    callModule(downloadObj, id = "popf1data", simpleCap(input$unit), "popf1data", popf1$data)
-    
-    callModule(downloadObj, id = "popf2plot", simpleCap(input$unit),"popf2plot", popf2$plot)
-    callModule(downloadObj, id = "popf2data", simpleCap(input$unit),"popf2data", popf2$data)
-    
-    callModule(downloadObj, id = "popf3plot", simpleCap(input$unit), "popf3plot", popf3$plot)
-    callModule(downloadObj, id = "popf3data", simpleCap(input$unit), "popf3data", popf3$data)
-    
-    callModule(downloadObj, id = "popf4plot", simpleCap(input$unit), "popf4plot", popf4$plot)
-    callModule(downloadObj, id = "popf4data", simpleCap(input$unit), "popf4data", popf4$data)
-    
-    #Age
-    callModule(downloadObj, id = "popa1plot", simpleCap(input$unit),"popa1plot", popa1$plot)
-    callModule(downloadObj, id = "popa1data", simpleCap(input$unit),"popa1data", popa1$data)
-    
-    callModule(downloadObj, id = "popa2plot", simpleCap(input$unit),"popa2plot", popa2$plot)
-    callModule(downloadObj, id = "popa2tabl", simpleCap(input$unit),"popa2tabl", popa2$FlexTable)
-    callModule(downloadObj, id = "popa2data", simpleCap(input$unit),"popa2data", popa2$data)
-    
-    callModule(downloadObj, id = "popa3plot", simpleCap(input$unit), "popa3plot", popa3$plot)
-    callModule(downloadObj, id = "popa3data", simpleCap(input$unit), "popa3data", popa3$data)
-    
-    callModule(downloadObj, id = "popa4plot", simpleCap(input$unit), "popa4plot", popa4$plot)
-    callModule(downloadObj, id = "popa4data", simpleCap(input$unit), "popa4data", popa4$data)
-    
-    #Population Characteristics
-    callModule(downloadObj, id = "popc1plot", simpleCap(input$unit),"popc1plot", popc1$plot)
-    callModule(downloadObj, id = "popc1data", simpleCap(input$unit),"popc1data", popc1$data)
-    
-    callModule(downloadObj, id = "popc2plot", simpleCap(input$unit),"popc2plot", popc2$plot)
-    callModule(downloadObj, id = "popc2data", simpleCap(input$unit),"popc2data", popc2$data)
-    
-    callModule(downloadObj, id = "popc3tabl", simpleCap(input$unit), "popc3tabl", popc3$FlexTable)
-    callModule(downloadObj, id = "popc3data", simpleCap(input$unit), "popc3data", popc3$data)
-    
-    
-    callModule(downloadObj, id = "popc4tabl", simpleCap(input$unit), "popc4tabl", popc4$FlexTable)
-    callModule(downloadObj, id = "popc4data", simpleCap(input$unit), "popc4data", popc4$data)
+    callModule(downloadObj, id = "popf1data", simpleCap(placeName), "popf1data", popf1$data1)
+    callModule(downloadObj, id = "popf2data", simpleCap(placeName),"popf2data", popf1$data2)
+    callModule(downloadObj, id = "popf3data", simpleCap(placeName), "popf3data", popf1$data2)
     
     #Housing
-    callModule(downloadObj, id = "poph1plot", simpleCap(input$unit),"poph1plot", poph1$plot)
-    callModule(downloadObj, id = "poph1data", simpleCap(input$unit),"poph1data", poph1$data)
-    
-    callModule(downloadObj, id = "poph2tabl", simpleCap(input$unit),"poph2tabl", poph2$FlexTable)
-    callModule(downloadObj, id = "poph2data", simpleCap(input$unit),"poph2data", poph2$data)
-    
-    callModule(downloadObj, id = "poph3tabl", simpleCap(input$unit),"poph3tabl", poph3$FlexTable)
-    callModule(downloadObj, id = "poph3data", simpleCap(input$unit), "poph3data", poph3$data)
-    
-    callModule(downloadObj, id = "poph4tabl", simpleCap(input$unit),"poph4tabl", poph4$FlexTable)
-    callModule(downloadObj, id = "poph4data", simpleCap(input$unit), "poph4data", poph4$data)
-    
-   
-    
-    #commuting
-    callModule(downloadObj, id = "popt1plot", simpleCap(input$unit),"popt1plot", popt1$plot)
-    
-    callModule(downloadObj, id = "popt2tabl", simpleCap(input$unit),"popt2tabl", popt1$Flexcomb)
-    callModule(downloadObj, id = "popt2data", simpleCap(input$unit),"popt2data", popt1$data2)
-    
-    callModule(downloadObj, id = "popt3tabl", simpleCap(input$unit),"popt3tabl", popt1$Flexcomb)
-    callModule(downloadObj, id = "popt3data", simpleCap(input$unit),"popt3data", popt1$data2)
-    
-    callModule(downloadObj, id = "popt4plot", simpleCap(input$unit),"popt4plot", popt2$plot)
-    callModule(downloadObj, id = "popt4data", simpleCap(input$unit),"popt4data", popt2$data)
+    callModule(downloadObj, id = "poph1data", simpleCap(placeName),"poph1data", poph2$data)
+    callModule(downloadObj, id = "poph2data", simpleCap(placeName),"poph2data", poph2$data)
+    callModule(downloadObj, id = "poph3data", simpleCap(placeName),"poph3data", poph2$data)
     
     #Employment by Industry
-    callModule(downloadObj, id = "popei1data", simpleCap(input$unit),"popei1data", popei1$data)
-    callModule(downloadObj, id = "popei2data", simpleCap(input$unit),"popei2data", popei2$data1)
-    callModule(downloadObj, id = "popei3data", simpleCap(input$unit),"popei3data", popei3$data2)
+    callModule(downloadObj, id = "popei1data", simpleCap(placeName),"popei1data", popei1$data)
+    callModule(downloadObj, id = "popei2data", simpleCap(placeName),"popei2data", popei2$data1)
+    callModule(downloadObj, id = "popei3data", simpleCap(placeName),"popei3data", popei2$data2)
    
     
     #Employment and Demographic Forecast
-    callModule(downloadObj, id = "popem1tabl", simpleCap(input$unit),"popem1tabl", popem1$FlexTable)
-    callModule(downloadObj, id = "popem1data", simpleCap(input$unit),"popem1data", popem1$data)
-    callModule(downloadObj, id = "popem2plot", simpleCap(input$unit),"popem2plot", popem2$plot)
-    callModule(downloadObj, id = "popem2data", simpleCap(input$unit),"popem2data", popem2$data)
-    callModule(downloadObj, id = "popem3tabl", simpleCap(input$unit),"popem3tabl", popem3$FlexTable)
-    callModule(downloadObj, id = "popem3data", simpleCap(input$unit),"popem3data", popem3$data)
+    callModule(downloadObj, id = "popem1data", simpleCap(placeName),"popem1data", popem1$data)
+    callModule(downloadObj, id = "popem2data", simpleCap(placeName),"popem2data", popem2$data)
+    callModule(downloadObj, id = "popem3data", simpleCap(placeName),"popem3data", popem3$data)
     
-    callModule(downloadObj, id = "popem4plot", simpleCap(input$unit),"popem4plot", popem4$plot)
-    callModule(downloadObj, id = "popem4data", simpleCap(input$unit),"popem4data", popem4$data)
-   # reset("comp")
-   # updateSelectizeInput(session, "comp", choices = outComp)
     
   }) #observeEvent input$profile
   
