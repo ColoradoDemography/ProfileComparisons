@@ -100,7 +100,7 @@ if(lvl == "Region to County"){
   }
  
  #Fixing data for Broomfield
- f.wages$weekly_wage <- ifelse(f.wages$fips == 14 & f.wages$year <= 2001, NA,f.wages$weekly_wage)
+ f.wages <- f.wages[!(f.wages$fips == 14 & f.wages$year <= 2001),]
   
     # Setting axis labels 
  x  <- list(title = "")
@@ -118,19 +118,25 @@ if(lvl == "Region to County"){
     bordercolor = "#FFFFFF",
     borderwidth = 2)
 
+rollText <- paste0(f.wages$geoname, "<br>", f.wages$year,": ", paste0("$", formatC(f.wages$weekly_wage, format="f", digits=2, big.mark=",")))
 
 wageplot <-  plot_ly(x=f.wages$year, y=f.wages$weekly_wage, 
                       type="scatter",mode='lines', color=f.wages$geoname,
                       transforms = list( type = 'groupby', groups = f.wages$geoname),
                       hoverinfo = "text",
-                      text = ~paste0(f.wages$geoname, "<br>", f.wages$year,": ", paste0("$", formatC(f.wages$weekly_wage, format="f", digits=2, big.mark=",")))) %>% 
+                      text = rollText) %>% 
                layout(title = grTitle,
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
                       hoverlabel = "right")
 
-  
+
+f.wages[is.na(f.wages)] <- ""
+f.wages$weekly_wage <- paste0("$", format(round(as.numeric(f.wages$weekly_wage),digits=2), big.mark=",", scientific=FALSE)) 
+f.wages$weekly_wage <- ifelse(gsub(" ","",f.wages$weekly_wage) == "$NA"," ",f.wages$weekly_wage)
+
+names(f.wages) <- c("County FIPS","County Name","Year","Average Weekly Wage") 
   outList <- list("plot"= wageplot, "data" = f.wages)
   
   return(outList)

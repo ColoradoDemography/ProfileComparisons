@@ -51,7 +51,7 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
  }
   
   if(lvl == "Region to County"){
-browser()
+
    #Building regional data
    f.jobsindR <- data.frame()
   if(ctyname1 == "Denver PMSA") {
@@ -158,6 +158,7 @@ browser()
     bordercolor = "#FFFFFF",
     borderwidth = 2)
 
+rollText <- paste0(f.plotfore$county, "<br>", f.plotfore$population_year,": ", format(f.plotfore$totaljobs, scientific=FALSE,big.mark = ","),"<br>",f.plotfore$datatype)
 
 jobsplot <-  plot_ly(x=f.plotest$population_year, y=f.plotest$totaljobs, 
                       type="scatter",mode='lines', color=f.plotest$county,
@@ -168,13 +169,17 @@ jobsplot <-  plot_ly(x=f.plotest$population_year, y=f.plotest$totaljobs,
                       type="scatter",mode='lines', color=f.plotfore$county, line = list(dash="dash"),
                       transforms = list(type = 'groupby', groups = f.plotfore$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.plotfore$county, "<br>", f.plotfore$population_year,": ", format(f.plotfore$totaljobs, scientific=FALSE,big.mark = ","),"<br>",f.plotfore$datatype), showlegend=FALSE) %>%
+                      text = rollText, showlegend=FALSE) %>%
                layout(title = grTitle,
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
                       hoverlabel = "right")
 
+f.plotdata$totaljobs <- format(as.numeric(f.plotdata$totaljobs), big.mark=",", scientific=FALSE)
+f.plotdata$datatype <- simpleCap(f.plotdata$datatype)
+f.plotdata <- f.plotdata[,c(2,6,5,3,4)]
+names(f.plotdata) <- c("County FIPS","County Name","Data Type","Year","Total Jobs")
   
   outList <- list("plot"= jobsplot, "data" = f.plotdata)
 

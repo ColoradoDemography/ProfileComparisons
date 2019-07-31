@@ -40,7 +40,7 @@ d <- county_sya(fips, yrs)  %>%
       summarize(Tot_pop = sum(as.numeric(totalpopulation)))
 
 #Fixing data for Broomfield
-d$Tot_pop <- ifelse(d$countyfips == 14 & d$year < 2000, NA,d$Tot_pop)
+d <- d[!(d$countyfips == 14 & d$year <= 2001),]
 
  d$Tot_pop <- round(d$Tot_pop,0)
  d_estimate <- d[which(d$datatype == "Estimate"),] 
@@ -66,8 +66,8 @@ d$Tot_pop <- ifelse(d$countyfips == 14 & d$year < 2000, NA,d$Tot_pop)
                 Net_Mig = as.numeric(netmigration))
 
   #Fixing data for Broomfield
-f.migr$Nat_incr <- ifelse(f.migr$countyfips == 14 & f.migr$year < 2000, NA,f.migr$Nat_incr)
-f.migr$Net_Mig <- ifelse(f.migr$countyfips == 14 & f.migr$year < 2000, NA,f.migr$Net_Mig)
+
+f.migr <- f.migr[!(f.migr$countyfips == 14 & f.migr$year <= 2001),]
 f.migr <- f.migr[which(f.migr$year >= 1990),]
 
 # Titles
@@ -98,7 +98,7 @@ d_county <- county_sya(fipsC, yrs)  %>%
 d <- bind_rows(d_county,d_region)
 
 #Fixing data for Broomfield
-d$Tot_pop <- ifelse(d$countyfips == 14 & d$year < 2000, NA,d$Tot_pop)
+d <- d[!(d$countyfips == 14 & d$year <= 2001),]
 
  d$Tot_pop <- round(d$Tot_pop,0)
  d_estimate <- d[which(d$datatype == "Estimate"),] 
@@ -143,8 +143,7 @@ d$Tot_pop <- ifelse(d$countyfips == 14 & d$year < 2000, NA,d$Tot_pop)
          
 
   #Fixing data for Broomfield
-f.migr$Nat_incr <- ifelse(f.migr$countyfips == 14 & f.migr$year < 2000, NA,f.migr$Nat_incr)
-f.migr$Net_Mig <- ifelse(f.migr$countyfips == 14 & f.migr$year < 2000, NA,f.migr$Net_Mig)
+f.migr <- f.migr[!(f.migr$countyfips == 14 & f.migr$year <= 2001),]
 f.migr <- f.migr[which(f.migr$year >= 1990),]
 
 
@@ -174,13 +173,13 @@ d <- county_sya(fips, yrs)  %>%
 
 
 #Fixing data for Broomfield
-d$Tot_pop <- ifelse(d$countyfips == 14 & d$year < 2000, NA,d$Tot_pop)
+d <- d[!(d$countyfips == 14 & d$year <= 2001),]
 
  d$Tot_pop <- round(d$Tot_pop,0)
  d_estimate <- d[which(d$datatype == "Estimate"),] 
  d_forecast <- d[which(d$datatype == "Forecast"),] 
 
- 
+
  # Natural Increase and Net Migration
 
   f.cocreg <- data.frame()
@@ -202,8 +201,7 @@ d$Tot_pop <- ifelse(d$countyfips == 14 & d$year < 2000, NA,d$Tot_pop)
          
 
 #Fixing data for Broomfield
-f.migr$Nat_incr <- ifelse(f.migr$countyfips == 14 & f.migr$year < 2000, NA,f.migr$Nat_incr)
-f.migr$Net_Mig <- ifelse(f.migr$countyfips == 14 & f.migr$year < 2000, NA,f.migr$Net_Mig)
+f.migr <- f.migr[!(f.migr$countyfips == 14 & f.migr$year <= 2001),]
 f.migr <- f.migr[which(f.migr$year >= 1990),]
 
 
@@ -228,6 +226,11 @@ f.migr <- f.migr[which(f.migr$year >= 1990),]
  y2 <- list(title = "Natural Increase")
  y3 <- list(title = "Net Migration")
  
+ rollText1 <- paste0(d_estimate$county, " County<br>", d_estimate$year,": ", format(d_estimate$Tot_pop, scientific=FALSE,big.mark = ","),"<br>", d_estimate$datatype) 
+ rollText2 <- paste0(d_forecast$county, " County<br>", d_forecast$year,": ", format(d_forecast$Tot_pop, scientific=FALSE,big.mark = ","),"<br>",d_forecast$datatype)
+ rollText3 <- paste0(f.migr$county, " County<br>", f.migr$year,": ", format(f.migr$Nat_incr, scientific=FALSE,big.mark = ","))
+ rollText4 <- paste0(f.migr$county, " County<br>", f.migr$year,": ", format(f.migr$Net_Mig, scientific=FALSE,big.mark = ","))
+ 
  # Legend
  l <- list(
     font = list(
@@ -244,16 +247,16 @@ countyplot <-  plot_ly(x=d_estimate$year, y=d_estimate$Tot_pop,
                       type="scatter",mode='lines', color=d_estimate$county,
                       transforms = list( type = 'groupby', groups = d_estimate$county),
                       hoverinfo = "text",
-                      text = ~paste0(d_estimate$county, "<br>", d_estimate$year,": ", format(d_estimate$Tot_pop, scientific=FALSE,big.mark = ","),"<br>", d_estimate$datatype)) %>% 
+                      text = rollText1) %>% 
                add_lines(x=d_forecast$year, y=d_forecast$Tot_pop, 
                       type="scatter",mode='lines', color=d_forecast$county, line = list(dash="dash"),
                       transforms = list(type = 'groupby', groups = d_forecast$county),
                       hoverinfo = "text",
-                      text = ~paste0(d_forecast$county, "<br>", d_forecast$year,": ", format(d_forecast$Tot_pop, scientific=FALSE,big.mark = ","),"<br>",d_forecast$datatype), showlegend=FALSE) %>%
+                      text = rollText2) %>%
                layout(title = grTit1,
                         xaxis = x,
                         yaxis = y1,
-                      legend = l,
+                      showlegend = FALSE,
                       hoverlabel = "right")
 
 
@@ -261,7 +264,7 @@ natIncrease <-  plot_ly(x=f.migr$year, y=f.migr$Nat_incr,
                       type="scatter",mode='lines', color=f.migr$county,
                       transforms = list( type = 'groupby', groups = f.migr$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.migr$county, "<br>", f.migr$year,": ", format(f.migr$Nat_incr, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText3) %>% 
                layout(title = grTit2,
                         xaxis = x,
                         yaxis = y2,
@@ -272,13 +275,20 @@ netMigr <-  plot_ly(x=f.migr$year, y=f.migr$Net_Mig,
                       type="scatter",mode='lines', color=f.migr$county,
                       transforms = list( type = 'groupby', groups = f.migr$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.migr$county, "<br>", f.migr$year,": ", format(f.migr$Net_Mig, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText4) %>% 
                layout(title = grTit3,
                         xaxis = x,
                         yaxis = y3,
                       legend = l,
                       hoverlabel = "right")
 
+
+if(lvl == "Regional Summary") {
+   f.migr <- f.migr[,c(1,5,2,6,7)]
+}
+
+names(f.migr) <- c("County FIPS","County Name","Year","Natural Increase", "Net Migration")
+names(d) <- c("County FIPS","County Name","Year",	"Data Type","Population")
 
 outlist <- list("plot1" = countyplot, "plot2" = natIncrease, "plot3" = netMigr,
                 "data1" =  d, "data2" = f.migr)

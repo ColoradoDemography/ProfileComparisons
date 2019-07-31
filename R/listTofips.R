@@ -1,4 +1,4 @@
-#'  listTofips : Produces a vector of FIPS codes from an inpout list of Census County and Plance Name Codes.
+#'  listTofips : Produces a vector of FIPS codes from an input list of Census County and Place Name Codes.
 #'
 #' @param  lvl the comparison level ("Regional Summary","Region to County","County to County","Municipality to Municipality")
 #' @param inlist1 The data frame for the base of comparison
@@ -36,7 +36,7 @@ listTofips <- function(lvl,inlist1,value1,inlist2,value2){
                     "Region 13: Central Mountains" = c("08015","08027","08043","08065"),
                     "Region 14: Southern Mountains" = c("08055","08071")
            )
-          fipsl <- list("length1" = length(reglist),"plName1" = value1, "list1"= reglist,"length2" = 0, "plName2" = "", "list2" = "")
+          fipsl <- list("length1" = length(reglist),"plName1" = value1, "list1"= reglist,"length2" = 0, "plName2" = CountyName(reglist), "list2" = "")
          }
   
   if(lvl == "Region to County") {

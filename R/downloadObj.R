@@ -9,90 +9,33 @@
 
 downloadObj <- function(input, output, session, place, oname, dobj) {
 
-  if(nchar(oname) == 7) {
-    dname <- substr(oname,1,3)
-    dtype <- substr(oname,4,7)
-  }
-  if(nchar(oname) == 8) {
-    dname <- substr(oname,1,4)
-    dtype <- substr(oname,5,8)
-  }
-  if(nchar(oname) == 9) {
-    dname <- substr(oname,1,5)
-    dtype <- substr(oname,6,9)
-  }
-
-  if(nchar(oname) == 10) {
-    dname <- substr(oname,1,6)
-    dtype <- substr(oname,7,10)
-  }
-
-
-  prefix <- switch(dname,
-                   "cty" = "County Ranking",
-                   "muni" = "Municipal Ranking",
-                   
-                   "stats" = " Basic Statistics",
-                   "popf1" = " Pop Growth Comparison",
-                   "popf2" = " Pop Growth",
-                   "popf3" = " Pop Forecast",
-                   "popf4" = " Components of Change",
-
-                   "popa1" = " Age Distribution",
-                   "popa2" = " Median Age",
-                   "popa3" = " Age Forecast",
-                   "popa4" = " Migration by Age",
-
-                   "popc1" = " Income",
-                   "popc2" = " Househould Income Sources",
-                   "popc3" = " Educational Attainment",
-                   "popc4" = " Race Trend",
-                   
-
-                   "poph1" = " Housing Forecast",
-                   "poph2" = " Housing Type",
-                   "poph3" = " Housing Units",
-                   "poph4" = " Housing Value",
-                   
-
-                   "popt1" = " Commuting Venn",
-                   "popt2" = " Commuting",
-                   "popt3" = " Commuting",
-                   "popt4" = " Jobs and Migration",
-
-                   "popei1" = " Jobs Forecast",
-                   "popei2" = " Jobs by Industry",
-                   "popei3" = " Jobs by Sector Detail",
-                   "popei4" = " Jobs by Sector General",
-
-                   "popem1" = " Jobs and Pop Forecast",
-                   "popem2" = " Avg Weekly Wage",
-                   "popem3" = " Residential Labor Force Forecast",
-                   "popem4" = " Labor Force Participation and Unemployment"
+  prefix <- switch(oname,
+                   "ctydata" = " County Ranking",
+                   "munidata" = " Municipality Ranking",
+                   "statstabl" =  " Basic Statistics",
+                   "popf1data" = " Population Estimates and Forecasts",
+                   "popf2data" = " Components of Change",
+                   "popf3data" = " Components of Change",
+                   "poph1data" = " Housing Type Estimates",
+                   "poph3data" = " Housing Type Estimates",
+                   "poph2data" = " Housing Type Estimates",
+                   "popei1data" = " Base Industries",
+                   "popei2data" = " Estimated Jobs",
+                   "popei3data" = " Estimated Firms",
+                   "popem1data" = " Job Estimates and Forecast",
+                   "popem2data" = " Weekly Wages",
+                   "popem3data" = " Unempolyment Rates"
 
   )
 
-  suffix <- ifelse(dtype == "plot"," Plot.png",
-            ifelse(dtype == "data"," Data.csv"," Table.docx"))
+  suffix <- " Data.csv"
 
   output$download <-  downloadHandler(
     filename = function() {
         paste0(place,prefix,suffix)
     },
     content = function(file) {
-      if(suffix == " Data.csv") {
         write_csv(dobj, file)
-      }
-      if(suffix == " Plot.png") {
-        ggsave(file, plot = dobj, width =8, height=6, units	="in", device = "png")
-        
-      }
-      if(suffix == " Table.docx") {
-        doc <- read_docx() %>%
-               body_add_flextable(value = dobj) %>%
-               body_end_section_landscape() 
-        print(doc, target = file)
-      }
-    } #content
+     } #content
   ) #DowhloadHandler
 } #downloadObj

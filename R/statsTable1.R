@@ -593,8 +593,10 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
   outTab <- gsub("&dagger;"," ^",outTab)
   f.Flex <- as.data.frame(outTab)
   names(f.Flex) <-  names_spaced
+  
+  outList <- list("data" = f.Flex)
 
-  return(f.Flex)
+  return(outList)
 
 }
 

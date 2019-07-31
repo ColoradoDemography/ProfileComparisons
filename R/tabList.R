@@ -6,6 +6,7 @@
 #' @export
 
 tabList <- function(item){
+
   outList <- list("Section Not Defined")
   if(item == "stats") {
     outList <- stats.list

@@ -42,9 +42,7 @@ if(lvl == "Regional Summary") {
   f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
   
   #Fixing data for Broomfield
-  f.hh$totalhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$totalhousingunits)
-  f.hh$occupiedhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$occupiedhousingunits)
-  f.hh$vacanthousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$vacanthousingunits)
+  f.hh <- f.hh[!(f.hh$countyfips == 14 & f.hh$year <=2001),]
   
   f.hh <- f.hh[which(f.hh$year >= 1990),]
   
@@ -91,9 +89,7 @@ if(lvl == "Region to County") {
  f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
   
   #Fixing data for Broomfield
-  f.hh$totalhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$totalhousingunits)
-  f.hh$occupiedhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$occupiedhousingunits)
-  f.hh$vacanthousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$vacanthousingunits)
+  f.hh <- f.hh[!(f.hh$countyfips == 14 & f.hh$year <=2001),]
   
   f.hh <- f.hh[which(f.hh$year >= 1990),]
   
@@ -130,9 +126,7 @@ if(lvl == "County to County") {
  f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
   
   #Fixing data for Broomfield
-  f.hh$totalhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$totalhousingunits)
-  f.hh$occupiedhousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$occupiedhousingunits)
-  f.hh$vacanthousingunits <- ifelse(f.hh$countyfips == 14 & f.hh$year < 2000, NA, f.hh$vacanthousingunits)
+ f.hh <- f.hh[!(f.hh$countyfips == 14 & f.hh$year <=2001),]
   
   f.hh <- f.hh[which(f.hh$year >= 1990),]
   
@@ -202,6 +196,17 @@ if(lvl == "Municipality to Municipality") {
  y2 <- list(title = "Occupied Housing Units")
  y3 <- list(title = "Vacant Housing Units")
  
+ 
+ if(lvl == "Municipality to Municiplaity") {
+   rollText1 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
+   rollText2 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
+   rollText3 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))
+ } else {
+   rollText1 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
+   rollText2 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
+   rollText3 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))
+ }
+ 
  # Legend
  l <- list(
     font = list(
@@ -217,7 +222,7 @@ tPlot<-  plot_ly(x=f.hh$year, y=f.hh$totalhousingunits,
                       type="scatter",mode='lines', color=f.hh$municipalityname,
                       transforms = list( type = 'groupby', groups = f.hh$municipalityname),
                       hoverinfo = "text",
-                      text = ~paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText1) %>% 
                layout(title = grTit1,
                         xaxis = x,
                         yaxis = y1,
@@ -228,7 +233,7 @@ oPlot<-  plot_ly(x=f.hh$year, y=f.hh$occupiedhousingunits,
                       type="scatter",mode='lines', color=f.hh$municipalityname,
                       transforms = list( type = 'groupby', groups = f.hh$municipalityname),
                       hoverinfo = "text",
-                      text = ~paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText2) %>% 
                layout(title = grTit2,
                         xaxis = x,
                         yaxis = y2,
@@ -239,7 +244,7 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       type="scatter",mode='lines', color=f.hh$municipalityname,
                       transforms = list( type = 'groupby', groups = f.hh$municipalityname),
                       hoverinfo = "text",
-                      text = ~paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText3) %>% 
                layout(title = grTit3,
                         xaxis = x,
                         yaxis = y3,
@@ -250,7 +255,7 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       type="scatter",mode='lines', color=f.hh$county,
                       transforms = list( type = 'groupby', groups = f.hh$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.hh$county, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText1) %>% 
                layout(title = grTit1,
                         xaxis = x,
                         yaxis = y1,
@@ -261,7 +266,7 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       type="scatter",mode='lines', color=f.hh$county,
                       transforms = list( type = 'groupby', groups = f.hh$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.hh$county, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText2) %>% 
                layout(title = grTit2,
                         xaxis = x,
                         yaxis = y2,
@@ -272,7 +277,7 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       type="scatter",mode='lines', color=f.hh$county,
                       transforms = list( type = 'groupby', groups = f.hh$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.hh$county, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText3) %>% 
                layout(title = grTit3,
                         xaxis = x,
                         yaxis = y3,
@@ -280,6 +285,8 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       hoverlabel = "right")
 }
  
+   f.hh <- f.hh[,c(1,5,2,3,6,4)]
+   names(f.hh) <- c("County FIPS","County Name","Year","Total Housing Units","Occupied Housing Units","Vacant Housing Units")
    outList <- list("plot1" = tPlot, "plot2" = oPlot, "plot3" = vPlot,
                    "data" = f.hh)
    return(outList)

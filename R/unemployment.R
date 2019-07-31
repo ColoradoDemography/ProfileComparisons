@@ -50,13 +50,15 @@ if(lvl == "Region to County"){
    
      
    f.unempR <- f.unemp %>% group_by(year) %>%
-        summarise(tot_lfpart = sum(lfpart),
-                  tot_unempl = sum(unemployment)) 
+        summarise(lfpart = sum(lfpart),
+                  employment = sum(employment),
+                  unemployment = sum(unemployment)) 
    
-   f.unempR$unemprate = round((f.unempR$tot_unempl/f.unempR$tot_lfpart),digits=3)
+   f.unempR$unemprate = round((f.unempR$unemployment/f.unempR$lfpart),digits=3)
    
    f.unempR$county <- ctyname1
    f.unempR$fips <- 1000
+   f.unempR <- f.unempR[,c(7,6,1:5)]
    
    #Building County data
    f.unempC <- data.frame()
@@ -67,8 +69,9 @@ if(lvl == "Region to County"){
         f.unempC <- bind_rows(f.unempC,f.unempPL)
       }
       f.unempC$unemprate <- f.unempC$unemprate/100
+      f.unempC <- f.unempC[,c(1,7,2:6)]
     
-    f.unemp <- bind_rows(f.unempR[,c(6,1,5,4)],f.unempC[,c(1,2,7,6)])
+    f.unemp <- bind_rows(f.unempR,f.unempC)
     
     revCty <- toString(ctyname2,sep=', ')
     grTitle <- paste0("Unemployment Rate: ",revCty, " compared to ",ctyname1)
@@ -90,9 +93,8 @@ if(lvl == "Region to County"){
      revCty <- toString(ctyname2,sep=', ')
     grTitle <- paste0("Unemployment Rate: ",revCty, " compared to ",ctyname1)
   }
- 
- #Fixing data for Broomfield
- f.unemp$unemprate <- ifelse(f.unemp$fips == 14 & f.unemp$year <= 2001, NA,f.unemp$unemprate)
+
+ f.unemp <- f.unemp[!(f.unemp$fips == 14 & f.unemp$year <= 2001),]
 
  maxUnemp <- max(f.unemp$unemprate,na.rm=TRUE) 
  
@@ -112,12 +114,13 @@ if(lvl == "Region to County"){
     bordercolor = "#FFFFFF",
     borderwidth = 2)
 
+ rollText <- paste0(f.unemp$county, "<br>", f.unemp$year,": ", paste0(round(f.unemp$unemprate*100,digits=1),"%"))
 
 unemplplot <-  plot_ly(x=f.unemp$year, y=f.unemp$unemprate, 
                       type="scatter",mode='lines', color=f.unemp$county,
                       transforms = list( type = 'groupby', groups = f.unemp$county),
                       hoverinfo = "text",
-                      text = ~paste0(f.unemp$county, "<br>", f.unemp$year,": ", paste0(round(f.unemp$unemprate*100,digits=1),"%"))) %>% 
+                      text = rollText) %>% 
                layout(title = grTitle,
                         xaxis = x,
                         yaxis = y1,
@@ -133,7 +136,18 @@ unemplplot <-  plot_ly(x=f.unemp$year, y=f.unemp$unemprate,
                  x0 = "2008", x1 = "2010", xref = "x",
                  y0 = 0, y1 = maxUnemp, yref = "y")))
 
-  
+
+f.unemp$lfpart  <- format(as.numeric(f.unemp$lfpart), big.mark=",", scientific=FALSE)
+f.unemp$employment  <- format(as.numeric(f.unemp$employment), big.mark=",", scientific=FALSE)
+f.unemp$unemployment  <- format(as.numeric(f.unemp$unemployment), big.mark=",", scientific=FALSE)
+f.unemp$unemprate  <- percent(as.numeric(f.unemp$unemprate)*100)
+
+
+
+names(f.unemp) <- c("County FIPS","County Name","Year","Labor Force Participation","Employed Persons",
+                    "Unemployed Persons","Unemployment Rate")
+
+
   outList <- list("plot"= unemplplot, "data" = f.unemp)
   return(outList)
 }

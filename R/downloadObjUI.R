@@ -7,6 +7,7 @@
 #' @export
 
 downloadObjUI <- function(id) {
+ 
   ns <- NS(id)
   #Identifying data object and type
   if(nchar(id) == 7) {

@@ -74,6 +74,9 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
         firms_data1 <- bind_rows(firms_data1,firms_cty)
     }
     
+    
+    
+    
     jobs_data2 <- data.frame()
     firms_data2 <- data.frame()
     for(i in 1:length(ctyfips2)) {
@@ -92,25 +95,30 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
     }
     
     #Aggregating Regional records
-    jobs_data1 <- jobs_data1 %>% group_by(year) %>%
+    jobs_data1 <- jobs_data1 %>% 
+          drop_na() %>%
+          group_by(year) %>%
           summarize(jobs= sum(jobs))
     jobs_data1$geoname <- ctyname1
+    jobs_data1$area_code <- 1000
+    jobs_data1 <- jobs_data1[,c(4,3,1,2)]
     
-    firms_data1 <- firms_data1 %>% group_by(year) %>%
+    firms_data1 <- firms_data1 %>% 
+         drop_na() %>%
+         group_by(year) %>%
          summarize(firms= sum(firms))
-    firms_data1$geoname <- ctyname1     
+    firms_data1$geoname <- ctyname1
+    firms_data1$fips <- 1000
+    firms_data1 <- firms_data1[,c(4,3,1,2)]
     
-     
-       #Adding county to jobs_data
+    #Adding county to jobs_data
     counties <- unique(firms_data2[,c(1,2)])
     names(counties) <- c("area_code","geoname")
     jobs_data2 <- inner_join(jobs_data2,counties, by="area_code")
 
-     jobs_data <- bind_rows(jobs_data1,jobs_data2[,c(9,8,10)])
-     firms_data <- bind_rows(firms_data1[,c(1,3,2)],firms_data2[,c(3,2,4)])
+     jobs_data <- bind_rows(jobs_data1,jobs_data2[,c(2,10,9,8)])
+     firms_data <- bind_rows(firms_data1,firms_data2)
      
-     jobs_data <- jobs_data[which(!is.na(jobs_data$jobs)),]
-     firms_data <- subset(firms_data, (!is.na(firms_data$firms)))
      
      revCty <- toString(ctyname2,sep=', ')
     
@@ -169,12 +177,14 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
     bordercolor = "#FFFFFF",
     borderwidth = 2)  
  
+ rollText1 <- paste0(jobs_data$geoname, "<br>", jobs_data$year,": ", format(jobs_data$jobs, scientific=FALSE,big.mark = ","))
+ rollText2 <- paste0(firms_data$geoname, "<br>", firms_data$year,": ", format(firms_data$firms, scientific=FALSE,big.mark = ","))
  
  jobs_plot <-  plot_ly(x=jobs_data$year, y=jobs_data$jobs, 
                       type="scatter",mode='lines', color=jobs_data$geoname,
                       transforms = list( type = 'groupby', groups = jobs_data$geoname),
                       hoverinfo = "text",
-                      text = ~paste0(jobs_data$geoname, "<br>", jobs_data$year,": ", format(jobs_data$jobs, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText1) %>% 
                layout(title = grTit1,
                         xaxis = x,
                         yaxis = y1,
@@ -194,7 +204,7 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                       type="scatter",mode='lines', color=firms_data$geoname,
                       transforms = list( type = 'groupby', groups = firms_data$geoname),
                       hoverinfo = "text",
-                      text = ~paste0(firms_data$geoname, "<br>", firms_data$year,": ", format(firms_data$firms, scientific=FALSE,big.mark = ","))) %>% 
+                      text = rollText2) %>% 
                layout(title = grTit2,
                         xaxis = x,
                         yaxis = y2,
@@ -211,6 +221,18 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                  y0 = 0, y1 = maxFirms, yref = "y")))
   
 
+if(lvl == "Regional Summary") {
+  jobs_data <- jobs_data[,c(2,10,9,8)]
+}
+ 
+
+jobs_data$jobs <- format(round(jobs_data$jobs,digits=0), big.mark=",", scientific=FALSE)
+
+firms_data$firms <- format(as.numeric(firms_data$firms), big.mark=",", scientific=FALSE)
+firms_data$firms <- ifelse(gsub(" ","",firms_data$firms) == "-9"," ",firms_data$firms)
+ 
+ names(jobs_data) <- c("County FIPS","County Name","Year","Total Jobs")
+ names(firms_data) <- c("County FIPS", "County Name",	"Year", "Firms")
   
   outList <- list("plot1" = jobs_plot, "data1" = jobs_data, "plot2"= firms_plot, "data2" = firms_data)
   return(outList)

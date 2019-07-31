@@ -210,6 +210,12 @@ BaseBars <- f.jobsBaseFin %>%
       )
   )))
 
+
+f.jobsBaseFin <- f.jobsBaseFin[,c(1,2,3,5)]
+f.jobsBaseFin$Njobs <- format(round(f.jobsBaseFin$Njobs,digits=0), big.mark=",", scientific=FALSE)
+
+names(f.jobsBaseFin) <- c("County Name","Industry","Number of Jobs","Percentage")
+
   outList <- list("plot" = BaseBars, "data"=f.jobsBaseFin)
   return(outList)
 }
