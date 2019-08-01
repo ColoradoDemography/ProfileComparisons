@@ -147,7 +147,6 @@ if(lvl == "County to County") {
 }
 
 if(lvl == "Municipality to Municipality") {
- 
       fips <- c(placefips2,placefips1)
       fips <- substr(fips,3,7)
       fips <- as.numeric(fips)
@@ -166,7 +165,7 @@ if(lvl == "Municipality to Municipality") {
     f.hh <- f.hh[which(f.hh$year >= 1990),]
     
     f.hh <- f.hh %>%
-          group_by(municipalityname, year) %>%
+          group_by(placefips,municipalityname, year) %>%
           summarize(totalhousingunits = sum(totalhousingunits),
                     occupiedhousingunits = sum(occupiedhousingunits),
                     vacanthousingunits = sum(vacanthousingunits))  
@@ -196,16 +195,7 @@ if(lvl == "Municipality to Municipality") {
  y2 <- list(title = "Occupied Housing Units")
  y3 <- list(title = "Vacant Housing Units")
  
- 
- if(lvl == "Municipality to Municiplaity") {
-   rollText1 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
-   rollText2 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
-   rollText3 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))
- } else {
-   rollText1 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
-   rollText2 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
-   rollText3 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))
- }
+
  
  # Legend
  l <- list(
@@ -218,6 +208,10 @@ if(lvl == "Municipality to Municipality") {
     bordercolor = "#FFFFFF",
     borderwidth = 2)  
 if(lvl == "Municipality to Municipality") {
+     rollText1 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
+   rollText2 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
+   rollText3 <- paste0(f.hh$municipalityname, "<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))
+
 tPlot<-  plot_ly(x=f.hh$year, y=f.hh$totalhousingunits, 
                       type="scatter",mode='lines', color=f.hh$municipalityname,
                       transforms = list( type = 'groupby', groups = f.hh$municipalityname),
@@ -251,6 +245,10 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       legend = l,
                       hoverlabel = "right")
 } else {
+   rollText1 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
+   rollText2 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
+   rollText3 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$vacanthousingunits, scientific=FALSE,big.mark = ","))
+
   tPlot<-  plot_ly(x=f.hh$year, y=f.hh$totalhousingunits, 
                       type="scatter",mode='lines', color=f.hh$county,
                       transforms = list( type = 'groupby', groups = f.hh$county),
@@ -285,8 +283,13 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                       hoverlabel = "right")
 }
  
-   f.hh <- f.hh[,c(1,5,2,3,6,4)]
+  if(lvl == "Municipality to Municipality") {
+     names(f.hh) <- c("Place FIPS", "Municipality Name","Year","Total Housing Units","Occupied Housing Units","Vacant Housing Units")
+  } else {
+    f.hh <- f.hh[,c(1,5,2,3,6,4)]
    names(f.hh) <- c("County FIPS","County Name","Year","Total Housing Units","Occupied Housing Units","Vacant Housing Units")
+  }
+   
    outList <- list("plot1" = tPlot, "plot2" = oPlot, "plot3" = vPlot,
                    "data" = f.hh)
    return(outList)
