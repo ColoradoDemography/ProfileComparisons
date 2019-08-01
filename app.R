@@ -471,7 +471,7 @@ server <- function(input, output, session) {
         }
         if(input$level == "County to County") {  
             if(is.null(input$comp)) {
-             lnError <- tags$h2("Please select one or more comparison locations.  Statistice for a single county are avaialble through the Colorado Dempgraphic Profiles application.")
+             lnError <- tags$h2("Please select one or more comparison locations.  Statistics for a single county are available through the Colorado Demographic Profiles application.")
              outputList <<- list(lnError)
              placeName = "ERROR"
            } else {
@@ -492,7 +492,7 @@ server <- function(input, output, session) {
         }
         if(input$level == "Municipality to Municipality") {  
              if(is.null(input$comp)) {
-             lnError <- tags$h2("Please select one or more comparison locations.  Statistice for a single municiplaity are avaialble through the Colorado Dempgraphic Profiles application.")
+             lnError <- tags$h2("Please select one or more comparison locations.  Statistics for a single municipality are available through the Colorado Demographic Profiles application..")
              outputList <<- list(lnError)
              placeName = "ERROR"
            } else {
