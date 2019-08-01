@@ -19,7 +19,6 @@ library(rmarkdown)
 library(shiny, quietly=TRUE)
 library(shinydashboard, quietly=TRUE)
 library(shinyjs, quietly=TRUE)
-library(eulerr)
 library(rgdal)
 library(jsonlite)
 library(geojsonio)
@@ -155,6 +154,8 @@ popem1 <<- list()
 popem2 <<- list()
 popem3 <<- list()
 popem.list <<- list()
+
+
 
 
 # Structure of user Interface
@@ -325,6 +326,7 @@ server <- function(input, output, session) {
     if(input$level == "County Ranking") {  # Added 9/18
       shinyjs::hide("base")
       shinyjs::hide("comp")
+
       updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements for table:",
                                choices = c("Total Population" = "totpop",
                                            "Average Annual Population Growth Rate" ="popgr",
@@ -343,6 +345,7 @@ server <- function(input, output, session) {
       updateSelectInput(session, "base", choices = outBase)
       shinyjs::hide("base")
       shinyjs::hide("comp")
+     
       updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
                                choices = c("Total Population" = "totpop",
                                            "Average Annual Population Growth Rate" ="popgr",
@@ -414,23 +417,20 @@ server <- function(input, output, session) {
     }
   }))  #observeEvent input$level
   
-  # Event for Comparison selection
-  observeEvent(input$comp, {
-    
-  }) #observeEvent input$comp
-  
+ 
   # Event for click on profile button
   observeEvent(input$profile,  {
     
-  
     outputList <<- list()
     output$ui <- renderUI(outputList)
-  
+ 
     #creating the input FIPS list to generate data
-    if(input$level == "Select Comparison Type") {
-      lnError <- tags$h2("Please specify a Comparison Type")
-      outputList <<- list(lnError)
-    }  else {
+   
+    if(input$level == "Select a Comparison Type") {
+        lnError <- tags$h2("Please select a Comparison Type.")
+        outputList <<- list(lnError)
+        placeName <- "ERROR"
+     }  else {
       withProgress(message = 'Generating Profile', value = 0, {  # Initialize Progress bar
         #Building fipslist
         if(input$level == "County Ranking")  {
@@ -447,49 +447,69 @@ server <- function(input, output, session) {
           placeName <- fipslist$plName1
         } 
         if(input$level == "Region to County") { 
-          fipslist <<- listTofips(lvl=input$level,inlist1=RegionList,value1=input$base,inlist2=CountyList,value2=input$comp)
-          if(fipslist$length2 == 1){
-            pl <- fipslist$plName2[1]
-          } else {
-            for(i in 1:fipslist$length2){
-            if(i == 1) {
-              pl <- fipslist$plName2[i] 
-            } else {
-              pl <- paste0(pl,", ",fipslist$plName2[i])
-            }
-          }
-          }
-          placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+          
+           if(is.null(input$comp)) {
+             lnError <- tags$h2("Please select one or more comparison locations.")
+             outputList <<- list(lnError)
+             placeName = "ERROR"
+           } else {
+              fipslist <<- listTofips(lvl=input$level,inlist1=RegionList,value1=input$base,inlist2=CountyList,value2=input$comp)
+              if(fipslist$length2 == 1){
+                pl <- fipslist$plName2[1]
+              } else {
+                for(i in 1:fipslist$length2){
+                if(i == 1) {
+                  pl <- fipslist$plName2[i] 
+                } else {
+                  pl <- paste0(pl,", ",fipslist$plName2[i])
+                }
+              }
+              }
+              placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+           }
+
         }
         if(input$level == "County to County") {  
-          fipslist <<- listTofips(lvl=input$level,inlist1=CountyList,value1=input$base,inlist2=CountyList,value2=input$comp)
-          if(fipslist$length2 == 1){
-            pl <- fipslist$plName2[1]
-          } else {
-            for(i in 1:fipslist$length2){
-              if(i == 1) {
-                pl <- fipslist$plName2[1] 
-              } else {
-                pl <- paste0(pl,", ",fipslist$plName2[i])
-              }
-          }
-          }
-          placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+            if(is.null(input$comp)) {
+             lnError <- tags$h2("Please select one or more comparison locations.  Statistice for a single county are avaialble through the Colorado Dempgraphic Profiles application.")
+             outputList <<- list(lnError)
+             placeName = "ERROR"
+           } else {
+                fipslist <<- listTofips(lvl=input$level,inlist1=CountyList,value1=input$base,inlist2=CountyList,value2=input$comp)
+                if(fipslist$length2 == 1){
+                  pl <- fipslist$plName2[1]
+                } else {
+                  for(i in 1:fipslist$length2){
+                    if(i == 1) {
+                      pl <- fipslist$plName2[1] 
+                    } else {
+                      pl <- paste0(pl,", ",fipslist$plName2[i])
+                    }
+                }
+                }
+                placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+           }
         }
         if(input$level == "Municipality to Municipality") {  
-          fipslist <<- listTofips(lvl=input$level,inlist1=PlaceList,value1=input$base,inlist2=PlaceList,value2=input$comp)
-          if(fipslist$length2 == 1){
-            pl <- fipslist$plName2[1]
-          } else {
-            for(i in 1:fipslist$length2){
-              if(i == 1) {
-                pl <- fipslist$plName2[1] 
+             if(is.null(input$comp)) {
+             lnError <- tags$h2("Please select one or more comparison locations.  Statistice for a single municiplaity are avaialble through the Colorado Dempgraphic Profiles application.")
+             outputList <<- list(lnError)
+             placeName = "ERROR"
+           } else {
+              fipslist <<- listTofips(lvl=input$level,inlist1=PlaceList,value1=input$base,inlist2=PlaceList,value2=input$comp)
+              if(fipslist$length2 == 1){
+                pl <- fipslist$plName2[1]
               } else {
-                pl <- paste0(pl,", ",fipslist$plName2[i])
+                for(i in 1:fipslist$length2){
+                  if(i == 1) {
+                    pl <- fipslist$plName2[1] 
+                  } else {
+                    pl <- paste0(pl,", ",fipslist$plName2[i])
+                  }
               }
-          }
-          }
-          placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+              }
+              placeName <- paste0(fipslist$plName1," Compared to: ",pl)
+           }
         }
         
         #Generate profile UI objects
@@ -499,7 +519,7 @@ server <- function(input, output, session) {
         ln1 <- tags$h1(placeName)
         
         
-        
+        if(placeName != "ERROR"){
         #creating ids and output flags for multiple counties and small places
          idList <- chkID(lvl=input$level,fipslist= fipslist)
         # Ranking output
@@ -847,7 +867,7 @@ server <- function(input, output, session) {
         
         
         incProgress()       
-        
+        } # ERROR  
       }) #Progress Bar
     }#if input$unit == ""
     
