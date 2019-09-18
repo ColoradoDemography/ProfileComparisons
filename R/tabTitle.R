@@ -12,7 +12,7 @@ tabTitle <-function(item) {
                      "popc"= "Income, Race and Education",
                      "housing" = "Housing and Households",
                      "comm" = "Commuting and Job Growth",
-                     "emplind" = "Employment by Industry",
-                     "emply" = "Employment Forecast and Wage Information")
+                     "emplind" = "Base Industries, Firms and Jobs",
+                     "emply" = "Labor Force Participation and Wage Information")
   return(outTitle)
 }
