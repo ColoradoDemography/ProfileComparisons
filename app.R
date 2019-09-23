@@ -75,17 +75,13 @@ source("R/unemployment.R")
 
 
 # The GLOBAL Variables  Add Additional lists items as sections get defined
-#File Locations ALSO LOOK AT LINE IN THE PDF OUTPUT CODE  LINE 1229
-# Local/Development
-# tPath <- "J:/Community Profiles/Shiny Demos/TempDir"  #Development
 
-#Production
- tPath <- "/tmp"  
+
 
 # Locations for Google Analtyics Java Script Files
 # Local/ Development
 
-# initJS <- "J:/Community Profiles/Shiny Demos/comparisons/www/dL_init.js"
+# initJS <- "J:/Community Profiles/Shiny Demos/Comparisons/www/dL_init.js"
 # tagManJS <- "J:/Community Profiles/Shiny Demos/Comparisons/www/tag_manager.js"
 
 #Production
@@ -117,15 +113,6 @@ dbGetInfo(DOLAPool)
 onStop(function(){
   poolClose(DOLAPool)
 })
-
-
-fixPath <- function(inPath){
-  outPath <- gsub("ABICKF~1","ABickford",inPath)
-  outPath <-gsub("\\\\","/",outPath)
-  return(outPath)
-}
-
-
 
 #CountyRanling
 ctyRank.list <<- list()
@@ -163,7 +150,7 @@ ui <-
   dashboardPage( 
                  skin="green", 
                  title= "Colorado Demographic Profiles Comparisons",
-                 dashboardHeader(title = span(img(src="ShieldOnly_LRG.png", height = 70, align = "top"),"Colorado Demographic Profiles Comparisons"), titleWidth=550), #dashboardHeader
+                 dashboardHeader(title = span(img(src="co_dola__LogoOnly.png", height = 45, align = "top"),"Colorado Demographic Profiles Comparisons"), titleWidth=550), #dashboardHeader
                  dashboardSidebar( width = 300,  useShinyjs(), 
                                    # data level Drop down
                                    selectInput("level", "Select Comparison Type" ,
@@ -175,7 +162,7 @@ ui <-
                                                       choices = NULL),
                                    #Action Button
                                    actionButton("profile","View Profile"),
-                                   actionButton("contact","Contact SDO",onclick ="window.open('https://goo.gl/forms/xvyxzq6DGD46rMo42', '_blank')")
+                                   actionButton("contact","Contact SDO",onclick ="window.open('https://forms.gle/Mgbz5cjYs6JN3rf26', '_blank')")
                                    
                                    
                                    
@@ -412,8 +399,9 @@ server <- function(input, output, session) {
       updateSelectizeInput(session, "comp", choices = outComp)
       updateCheckboxGroupInput(session,"outChk", label="Select the Data Elements to display:",
                                 choices = c("Basic Statistics" = "stats",
+                                             "Population Estimates and Forecasts" = "popf",
                                             "Housing and Households" = "housing"),
-                          selected =  c("stats", "housing"))
+                          selected =  c("stats", "popf", "housing"))
     }
   }))  #observeEvent input$level
   
@@ -659,9 +647,16 @@ server <- function(input, output, session) {
         if("popf" %in% input$outChk){
           #Chart/Table Objects
           popf1 <<- popPlotly(DBPool=DOLAPool,lvl=input$level,listID=idList)
-          outplotp1 <- popf1$plot1
-          outplotp2 <- popf1$plot2
-          outplotp3 <- popf1$plot3
+          if(input$level == "Municipality to Municipality") {
+             outplotp1 <- popf1$plot1
+             outplotp2 <- popf1$plot2
+          } else {
+            outplotp1 <- popf1$plot1
+            outplotp2 <- popf1$plot2
+            outplotp3 <- popf1$plot3
+            outplotp4 <- popf1$plot4
+          }
+
 
           #infobox Objects
             popf1.info <- tags$div(boxContent(title= "Population Estimates and Forecasts",
@@ -675,10 +670,10 @@ server <- function(input, output, session) {
                               tabPanel("Plot",renderPlotly({outplotp1})),
                               tabPanel("Sources and Downloads",popf1.info))
              
-             popf2.info <- tags$div(boxContent(title= "Natural Increase",
-                                              description = "Trends in Natural Increase show the difference between Births and Dealths in a County",
+             popf2.info <- tags$div(boxContent(title= "Gropu Quarters Estimate",
+                                              description = "The Group Quarters Estimate shows the number of people living in geoup quarters (Prisons, Dormitories, Care Facilities, etc.)",
                                               MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
-                                              urlList = list(c("SDO Components of Change","https://demography.dola.colorado.gov/births-deaths-migration/data/components-change/#components-of-change")) ),
+                                              urlList = list(c("SDO County Data Lookup","https://demography.dola.colorado.gov/population/data/county-data-lookup")) ),
                                    tags$br(),
                                    downloadObjUI("popf2data"))
      
@@ -686,9 +681,9 @@ server <- function(input, output, session) {
                               tabPanel("Plot",renderPlotly({outplotp2})),
                               tabPanel("Sources and Downloads",popf2.info))
              
-             
-            popf3.info <- tags$div(boxContent(title= "Net Migration",
-                                              description = "Trends in Net Migration show the difference between in migration and out migration in a County",
+             if(input$level != "Municipality to Municipality") {
+             popf3.info <- tags$div(boxContent(title= "Natural Increase",
+                                              description = "Trends in Natural Increase show the difference between Births and Dealths in a County",
                                               MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
                                               urlList = list(c("SDO Components of Change","https://demography.dola.colorado.gov/births-deaths-migration/data/components-change/#components-of-change")) ),
                                    tags$br(),
@@ -697,8 +692,26 @@ server <- function(input, output, session) {
              popf3.box <- tabBox(width=12, height=500,
                               tabPanel("Plot",renderPlotly({outplotp3})),
                               tabPanel("Sources and Downloads",popf3.info))
+             
+             
+            popf4.info <- tags$div(boxContent(title= "Net Migration",
+                                              description = "Trends in Net Migration show the difference between in migration and out migration in a County",
+                                              MSA= "F", stats = "F", muni = "F", multiCty = "F", PlFilter = "F", 
+                                              urlList = list(c("SDO Components of Change","https://demography.dola.colorado.gov/births-deaths-migration/data/components-change/#components-of-change")) ),
+                                   tags$br(),
+                                   downloadObjUI("popf4data"))
+     
+             popf4.box <- tabBox(width=12, height=500,
+                              tabPanel("Plot",renderPlotly({outplotp4})),
+                              tabPanel("Sources and Downloads",popf4.info))
+             }
               #Append to List
-              popf.list <<- list(popf1.box, popf2.box, popf3.box)
+             if(input$level == "Municipality to Municipality") {
+               popf.list <<- list(popf1.box, popf2.box)
+             } else {
+               popf.list <<- list(popf1.box, popf2.box, popf3.box, popf4.box)
+             }
+              
              
               incProgress()
         }  # popf
@@ -907,10 +920,15 @@ server <- function(input, output, session) {
     
     
     #Population Forecast
+    if(input$level != "Municipality to Municipality") {
+       callModule(downloadObj, id = "popf1data", simpleCap(placeName), "popf1data", popf1$data1)
+    } else {
+       callModule(downloadObj, id = "popf1data", simpleCap(placeName), "popf1data", popf1$data2)
+    }
     
-    callModule(downloadObj, id = "popf1data", simpleCap(placeName), "popf1data", popf1$data1)
     callModule(downloadObj, id = "popf2data", simpleCap(placeName),"popf2data", popf1$data2)
     callModule(downloadObj, id = "popf3data", simpleCap(placeName), "popf3data", popf1$data2)
+    callModule(downloadObj, id = "popf4data", simpleCap(placeName), "popf4data", popf1$data2)
     
     #Housing
     callModule(downloadObj, id = "poph1data", simpleCap(placeName),"poph1data", poph2$data)
