@@ -150,7 +150,7 @@ ui <-
   dashboardPage( 
                  skin="green", 
                  title= "Colorado Demographic Profiles Comparisons",
-                 dashboardHeader(title = span(img(src="co_dola__LogoOnly.png", height = 45, align = "top"),"Colorado Demographic Profiles Comparisons"), titleWidth=550), #dashboardHeader
+                 dashboardHeader(title = span(img(src="co_dola__NoText-dept.png", height = 45, align = "top"),"Colorado Demographic Profiles Comparisons"), titleWidth=550), #dashboardHeader
                  dashboardSidebar( width = 300,  useShinyjs(), 
                                    # data level Drop down
                                    selectInput("level", "Select Comparison Type" ,
