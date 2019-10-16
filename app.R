@@ -162,7 +162,7 @@ ui <-
                                                       choices = NULL),
                                    #Action Button
                                    actionButton("profile","View Profile"),
-                                   actionButton("contact","Contact SDO",onclick ="window.open('https://forms.gle/Mgbz5cjYs6JN3rf26', '_blank')")
+                                   actionButton("contact","SDO Beta Test Survey",onclick ="window.open('https://docs.google.com/forms/d/e/1FAIpQLSdaysf_2NXRdqaSj6Df3DVusP4hszquFL1vXRoTuvVdBnBNxw/viewform', '_blank')")
                                    
                                    
                                    
