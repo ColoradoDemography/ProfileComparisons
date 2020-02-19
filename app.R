@@ -2,7 +2,7 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2019 -November 2019
 #' Release Version 0.5 5/21/2019
 
-setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+#setwd("J:/Community Profiles/Shiny Demos/Comparisons")
 
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
@@ -90,8 +90,8 @@ source("R/unemployment.R")
 # tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
 
 # Current ACS database
-curACS <- "acs1317"
-curYr <- 2017
+curACS <- "acs1418"
+curYr <- 2018
 fipslist <<- ""
 
 # Set up database pool 1/23/19
