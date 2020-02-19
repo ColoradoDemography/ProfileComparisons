@@ -16,7 +16,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
 
   
    # Collecting place ids from  idList, setting default values
-  
+ 
   ctyfips1 <- listID$ctyNum1
   ctyname1 <- listID$ctyName1
   
@@ -29,7 +29,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
   placefips2 <- listID$plNum2
   placename2 <- listID$plName2
  
-  
+ 
   if(lvl == "Regional Summary") {
 
     f.tPopyr1r <- data.frame()
@@ -39,6 +39,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
     f.medhhvaluer <- data.frame()
     f.povertyr <- data.frame()
     f.nativer <- data.frame()
+    
     
     for(i in 1:length(ctyfips1)){
       # Building up data files
@@ -132,7 +133,7 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
       left_join(., f.nativepctc, by= 'countyfips')
     countyData <- countyData[,c(1:4,6,8,10,12,14)] 
     names(countyData)[2] <- "geoname"
-    countyData$geoname <- paste0(countyData$geoname," County")
+    countyData$geoname <-str_to_title(countyData$geoname)
     
     #state Values
     #Population
@@ -582,19 +583,22 @@ statsTable1 <- function(DBPool,lvl,listID,sYr,eYr,ACS){
   outTab[1,1] <- paste0("Population (",eYr,")",footnote_marker_symbol(1))
   outTab[2,1] <- paste0("Population Change (",sYr," to ",eYr, ")",footnote_marker_symbol(1))
   outTab[3,1] <- paste0("Total Employment (",eYr,")",footnote_marker_symbol(1))
-  outTab[4,1] <- paste0("Median Household Income",footnote_marker_symbol(2))
-  outTab[5,1] <- paste0("Median House Value",footnote_marker_symbol(2))
-  outTab[6,1] <- paste0("Percentage of Population with Incomes lower than the Poverty Line",footnote_marker_symbol(2))
-  outTab[7,1] <- paste0("Percentage of Population Born in Colorado",footnote_marker_symbol(2))
+  outTab[4,1] <- paste0("Median Household Income (",eYr,")",footnote_marker_symbol(2))
+  outTab[5,1] <- paste0("Median House Value (",eYr,")",footnote_marker_symbol(2))
+  outTab[6,1] <- paste0("Percentage of Population with Incomes lower than the Poverty Line (",eYr,")",footnote_marker_symbol(2))
+  outTab[7,1] <- paste0("Percentage of Population Born in Colorado (",eYr,")",footnote_marker_symbol(2))
   
  #Generate output
   outTab <- gsub("<sup>"," ",outTab)
   outTab <- gsub("</sup>","",outTab)
   outTab <- gsub("&dagger;"," ^",outTab)
+
+  captionTxt <- paste("*",substr(captionSrc("SDO",""),1,31),", ^",captionSrc("ACS",ACS))
   f.Flex <- as.data.frame(outTab)
   names(f.Flex) <-  names_spaced
   
-  outList <- list("data" = f.Flex)
+  
+  outList <- list("data" = f.Flex,"caption" = captionTxt)
 
   return(outList)
 

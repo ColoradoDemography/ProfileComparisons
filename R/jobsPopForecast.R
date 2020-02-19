@@ -159,7 +159,7 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
     borderwidth = 2)
 
 rollText <- paste0(f.plotfore$county, "<br>", f.plotfore$population_year,": ", format(f.plotfore$totaljobs, scientific=FALSE,big.mark = ","),"<br>",f.plotfore$datatype)
-
+browser()
 jobsplot <-  plot_ly(x=f.plotest$population_year, y=f.plotest$totaljobs, 
                       type="scatter",mode='lines', color=f.plotest$county,
                       transforms = list( type = 'groupby', groups = f.plotest$county),
@@ -174,7 +174,13 @@ jobsplot <-  plot_ly(x=f.plotest$population_year, y=f.plotest$totaljobs,
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 f.plotdata$totaljobs <- format(as.numeric(f.plotdata$totaljobs), big.mark=",", scientific=FALSE)
 f.plotdata$datatype <- simpleCap(f.plotdata$datatype)

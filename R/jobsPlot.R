@@ -190,6 +190,12 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                         yaxis = y1,
                         legend = l,
                         hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3),
                      shapes = list(
                list(type = "rect",
                     fillcolor = "grey", line = list(color = "grey"), opacity = 0.3,
@@ -210,6 +216,12 @@ jobsPlot=function(DBPool, lvl,listID, maxyr){
                         yaxis = y2,
                         legend = l,
                         hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3),
                      shapes = list(
                list(type = "rect",
                     fillcolor = "grey", line = list(color = "grey"), opacity = 0.3,

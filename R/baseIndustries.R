@@ -172,6 +172,12 @@ BaseBars <- f.jobsBaseFin %>%
       )
   )) %>% layout( title=grTitle, yaxis = list(title = 'Percent',tickformat = "%"), xaxis=list(title='County'),
           showlegend = FALSE,
+          margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+          annotations = list(text = captionSrc("SDO",""),
+                  font = list(size = 12),
+                  showarrow = FALSE,
+                  xref = 'paper', x = 0,
+                  yref = 'paper', y = -0.3),
     updatemenus = list(
       list(
         type = 'dropdown',

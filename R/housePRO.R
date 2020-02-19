@@ -37,6 +37,7 @@ if(lvl == "Regional Summary") {
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     HH$county <- namex$municipalityname 
+    HH$county <- simpleCap(HH$county)
     f.hh <- bind_rows(f.hh,HH)
   }
   f.hh$occupiedhousingunits <-   f.hh$totalhousingunits - f.hh$vacanthousingunits
@@ -61,6 +62,7 @@ if(lvl == "Region to County") {
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     HH$county <- namex$municipalityname 
+    HH$county <- simpleCap(HH$county)
     f.hh <- bind_rows(f.hh,HH)
   }
   f.hhR <- f.hh %>%
@@ -80,6 +82,7 @@ if(lvl == "Region to County") {
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips2[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     HH$county <- namex$municipalityname 
+    HH$county <- simpleCap(HH$county)
     f.hhC <- bind_rows(f.hhC,HH)
   }
  
@@ -120,6 +123,7 @@ if(lvl == "County to County") {
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(fips[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     HH$county <- namex$municipalityname 
+    HH$county <- simpleCap(HH$county)
     f.hh <- bind_rows(f.hh,HH)
   }
 
@@ -221,7 +225,13 @@ tPlot<-  plot_ly(x=f.hh$year, y=f.hh$totalhousingunits,
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 oPlot<-  plot_ly(x=f.hh$year, y=f.hh$occupiedhousingunits, 
                       type="scatter",mode='lines', color=f.hh$municipalityname,
@@ -232,7 +242,13 @@ oPlot<-  plot_ly(x=f.hh$year, y=f.hh$occupiedhousingunits,
                         xaxis = x,
                         yaxis = y2,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits, 
                       type="scatter",mode='lines', color=f.hh$municipalityname,
@@ -243,7 +259,13 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                         xaxis = x,
                         yaxis = y3,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 } else {
    rollText1 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$totalhousingunits, scientific=FALSE,big.mark = ","))
    rollText2 <- paste0(f.hh$county, " County<br>", f.hh$year,": ", format(f.hh$occupiedhousingunits, scientific=FALSE,big.mark = ","))
@@ -258,7 +280,13 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
  oPlot<-  plot_ly(x=f.hh$year, y=f.hh$occupiedhousingunits, 
                       type="scatter",mode='lines', color=f.hh$county,
@@ -269,7 +297,13 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                         xaxis = x,
                         yaxis = y2,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits, 
                       type="scatter",mode='lines', color=f.hh$county,
@@ -280,7 +314,13 @@ vPlot<-  plot_ly(x=f.hh$year, y=f.hh$vacanthousingunits,
                         xaxis = x,
                         yaxis = y3,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 }
  
   if(lvl == "Municipality to Municipality") {

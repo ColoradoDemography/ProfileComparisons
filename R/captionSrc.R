@@ -28,5 +28,6 @@ captionSrc <- function(type, dataSrc) {
     srcStr <- paste0("Source: U.S. Census Bureau, ",byr,"-",eyr," American Community Survey", dateStr)
     
   }
+  
   return(srcStr)
 }

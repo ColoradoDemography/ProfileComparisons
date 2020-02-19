@@ -9,6 +9,7 @@
 #' @export
 #'
 popPlotly <- function(DBPool,lvl,listID) {
+
   outMessage  <- ""
   sYr = 1990
   eYr = 2050
@@ -38,7 +39,7 @@ fips <- as.numeric(ctyfips1)
 d <- county_sya(fips, yrs)  %>%
       group_by(countyfips, county, year, datatype) %>%
       summarize(Tot_pop = sum(as.numeric(totalpopulation)))
-
+d$county <- paste0(d$county," County")
 #Fixing data for Broomfield
 d <- d[!(d$countyfips == 14 & d$year <= 2001),]
 
@@ -55,9 +56,12 @@ d <- d[!(d$countyfips == 14 & d$year <= 2001),]
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     cocx$county <- namex$municipalityname 
+    cocx$county <- simpleCap(cocx$county)
     f.cocreg <- bind_rows(f.cocreg,cocx)
   }
   
+ 
+   
   f.migr <-  f.cocreg %>%
          mutate(countyfips = countyfips, 
                 county = county, 
@@ -81,7 +85,6 @@ f.migr <- f.migr[which(f.migr$year >= 1990),]
 }
 
 if(lvl == "Region to County") {
-
 # Build dataset
 #region
 fipsR <- as.numeric(ctyfips1)
@@ -115,6 +118,7 @@ d <- d[!(d$countyfips == 14 & d$year <= 2001),]
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips1[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     cocx$county <- namex$municipalityname 
+    cocx$county <- simpleCap(cocx$county)
     f.cocreg <- bind_rows(f.cocreg,cocx)
   }
 
@@ -136,6 +140,7 @@ d <- d[!(d$countyfips == 14 & d$year <= 2001),]
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(ctyfips2[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     cocx$county <- namex$municipalityname
+    cocx$county <- simpleCap(cocx$county)
     cocx2 <- bind_rows(cocx2,cocx)
    }
     f.coccty <- cocx2 %>%
@@ -199,6 +204,7 @@ d <- d[!(d$countyfips == 14 & d$year <= 2001),]
     nameStr <- paste0("SELECT countyfips, municipalityname FROM estimates.county_muni_timeseries WHERE countyfips = ",as.numeric(fips[i])," and year = 1990 and placefips = 0;")
     namex <- dbGetQuery(DBPool,nameStr)
     cocx$county <- namex$municipalityname 
+    cocx$county <- simpleCap(cocx$county)
     f.cocreg <- bind_rows(f.cocreg,cocx)
   }
 
@@ -285,11 +291,11 @@ f.migr <- f.migr[which(f.migr$year >= 1990),]
 
  if(lvl != "Municipality to Municipality") {  
  
- rollText1 <- paste0(d_estimate$county, " County<br>", d_estimate$year,": ", format(d_estimate$Tot_pop, scientific=FALSE,big.mark = ","),"<br>", d_estimate$datatype) 
- rollText2 <- paste0(d_forecast$county, " County<br>", d_forecast$year,": ", format(d_forecast$Tot_pop, scientific=FALSE,big.mark = ","),"<br>",d_forecast$datatype)
- rollText3 <- paste0(f.migr$county, " County<br>", f.migr$year,": ", format(f.migr$Nat_incr, scientific=FALSE,big.mark = ","))
- rollText4 <- paste0(f.migr$county, " County<br>", f.migr$year,": ", format(f.migr$Net_Mig, scientific=FALSE,big.mark = ","))
-  rollText5 <- paste0(f.migr$county, " County<br>", f.migr$year,": ", format(f.migr$GQ, scientific=FALSE,big.mark = ","))
+ rollText1 <- paste0(d_estimate$county, "<br>", d_estimate$year,": ", format(d_estimate$Tot_pop, scientific=FALSE,big.mark = ","),"<br>", d_estimate$datatype) 
+ rollText2 <- paste0(d_forecast$county, "<br>", d_forecast$year,": ", format(d_forecast$Tot_pop, scientific=FALSE,big.mark = ","),"<br>",d_forecast$datatype)
+ rollText3 <- paste0(f.migr$county, "<br>", f.migr$year,": ", format(f.migr$Nat_incr, scientific=FALSE,big.mark = ","))
+ rollText4 <- paste0(f.migr$county, "<br>", f.migr$year,": ", format(f.migr$Net_Mig, scientific=FALSE,big.mark = ","))
+  rollText5 <- paste0(f.migr$county, "<br>", f.migr$year,": ", format(f.migr$GQ, scientific=FALSE,big.mark = ","))
  } else {
  rollText1 <- paste0(f.migr$municipalityname, "<br>", f.migr$year,": ", format(f.migr$Tot_pop, scientific=FALSE,big.mark = ",")) 
  rollText5 <- paste0(f.migr$municipalityname, "<br>", f.migr$year,": ", format(f.migr$GQ, scientific=FALSE,big.mark = ","))
@@ -305,22 +311,34 @@ f.migr <- f.migr[which(f.migr$year >= 1990),]
     bordercolor = "#FFFFFF",
     borderwidth = 2)
 
+   
+
 if(lvl != "Municipality to Municipality") {
+ 
+annotation <- list(yref = 'paper', xref = "paper", y = 0, x = 0, xanchor="left", yanchor="bottom", showarrow=FALSE, text = "annotation")  
 countyplot <-  plot_ly(x=d_estimate$year, y=d_estimate$Tot_pop, 
                       type="scatter",mode='lines', color=d_estimate$county,
                       transforms = list( type = 'groupby', groups = d_estimate$county),
                       hoverinfo = "text",
-                      text = rollText1) %>% 
+                      text = rollText1,
+                      showlegend = TRUE) %>% 
                add_lines(x=d_forecast$year, y=d_forecast$Tot_pop, 
                       type="scatter",mode='lines', color=d_forecast$county, line = list(dash="dash"),
                       transforms = list(type = 'groupby', groups = d_forecast$county),
                       hoverinfo = "text",
-                      text = rollText2) %>%
-               layout(title = grTit1,
+                      text = rollText2,
+                      showlegend=FALSE) %>%
+               layout(title = grTit1,  
                         xaxis = x,
                         yaxis = y1,
-                      showlegend = FALSE,
-                      hoverlabel = "right")
+                      legend = l,
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 GQplot <-  plot_ly(x=f.migr$year, y=f.migr$GQ, 
                       type="scatter",mode='lines', color=f.migr$county,
@@ -331,7 +349,13 @@ GQplot <-  plot_ly(x=f.migr$year, y=f.migr$GQ,
                         xaxis = x,
                         yaxis = y2,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
   natIncrease <-  plot_ly(x=f.migr$year, y=f.migr$Nat_incr, 
                       type="scatter",mode='lines', color=f.migr$county,
@@ -342,7 +366,13 @@ GQplot <-  plot_ly(x=f.migr$year, y=f.migr$GQ,
                         xaxis = x,
                         yaxis = y3,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 netMigr <-  plot_ly(x=f.migr$year, y=f.migr$Net_Mig, 
                       type="scatter",mode='lines', color=f.migr$county,
@@ -353,8 +383,14 @@ netMigr <-  plot_ly(x=f.migr$year, y=f.migr$Net_Mig,
                         xaxis = x,
                         yaxis = y4,
                       legend = l,
-                      hoverlabel = "right")
-browser()
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
+
 if(lvl == "Regional Summary")  {
    f.migr <- f.migr[,c(1,6,2,7:9)]
 }
@@ -378,7 +414,14 @@ outlist <- list("plot1" = countyplot, "plot2" = GQplot, "plot3" = natIncrease, "
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3)) 
+    
   
   GQplot <-  plot_ly(x=f.migr$year, y=f.migr$GQ, 
                       type="scatter",mode='lines', color=f.migr$municipalityname,
@@ -389,7 +432,13 @@ outlist <- list("plot1" = countyplot, "plot2" = GQplot, "plot3" = natIncrease, "
                         xaxis = x,
                         yaxis = y2,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("SDO",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
  
   names(f.migr) <- c("Place FIPS","Municipality Name","Year","Total Population", "Group Quarters")
   outlist <- list("plot1" = countyplot, "plot2" = GQplot,  "data2" = f.migr)

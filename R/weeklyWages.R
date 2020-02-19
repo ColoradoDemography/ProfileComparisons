@@ -129,7 +129,13 @@ wageplot <-  plot_ly(x=f.wages$year, y=f.wages$weekly_wage,
                         xaxis = x,
                         yaxis = y1,
                       legend = l,
-                      hoverlabel = "right")
+                      hoverlabel = "right",
+                      margin = list(l = 50, r = 50, t = 60, b = 100),   #This Works 
+                      annotations = list(text = captionSrc("QCEW",""),
+                              font = list(size = 12),
+                              showarrow = FALSE,
+                              xref = 'paper', x = 0,
+                              yref = 'paper', y = -0.3))
 
 
 f.wages[is.na(f.wages)] <- ""

@@ -34,7 +34,8 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
     
     
     f.munifull <- inner_join(f.munifull,f.munipop,by="GEOID")
-    popnames <- c("Total Population" = "totalpopulation")
+    inName <- paste0("Total Population (",eYr,")")
+    popnames <- setNames( c("totalpopulation"),as.list(inName))
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -63,8 +64,9 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
    
     f.muniGR <-  f.muniGR[which( f.muniGR$year == eYr),]  
     f.munifull <- inner_join(f.munifull,f.muniGR[,c(1,4)],by="GEOID")
+    inName <- paste0("Average Population Growth Rate (",eYr,")")
+    popnames <- setNames( c("growthRate"),as.list(inName))
     
-    popnames <- c("Average Population Growth Rate" = "growthRate")
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -95,16 +97,18 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
  
   if("pop2564" %in% chkList) {
     f.munifull <- inner_join(f.munifull,f.place2[,c(1,4)], by="GEOID")
-    
-    popnames <- c("Percent of Population Age 25 to 64" = "tpop2564pct")
+    inName <- paste0("Percent of Population Age 25 to 64 (",eYr,")")
+    popnames <- setNames( c("tpop2564pct"),as.list(inName))
+
     colName2 <- c(colName2,popnames)
     incProgress()
   }
   
   if("pop65" %in% chkList) {
     f.munifull <- inner_join(f.munifull,f.place2[,c(1,6)], by="GEOID")
-    
-    popnames <- c("Percent of Population Age 65 and Older" = "tpop65pct")
+    inName <- paste0("Percent of Population Age 65 and Older (",eYr,")")
+    popnames <- setNames( c("tpop65pct"),as.list(inName))
+
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -112,22 +116,24 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
   #percent non-white
 
   if("pctNW" %in% chkList) {
-    f.nonwhite <-codemog_api(data="b03002",db=ACS,sumlev="160",geography="sumlev",meta="no")
+    f.HISP <-codemog_api(data="b03002",db=ACS,sumlev="160",geography="sumlev",meta="no")
     # Conver to numeric
-    f.nonwhite[,8:ncol(f.nonwhite)] <- sapply(f.nonwhite[,8:ncol(f.nonwhite)],as.numeric)
+    f.HISP[,8:ncol(f.HISP)] <- sapply(f.HISP[,8:ncol(f.HISP)],as.numeric)
     # Change geonum to geoid
-    names(f.nonwhite)[7] <- "GEOID"
-    f.nonwhite$GEOID <- substr(f.nonwhite$GEOID,2,nchar(f.nonwhite$GEOID))
+    names(f.HISP)[7] <- "GEOID"
+    f.HISP$GEOID <- substr(f.HISP$GEOID,2,nchar(f.HISP$GEOID))
     
-    f.nonwhite <- f.nonwhite %>%
+    f.HISP <- f.HISP %>%
       filter(GEOID %in% allmuni0) %>%
       mutate(TotalPop= b03002001,
-             NHWhite= b03002003,
-             pctNonWhite = (TotalPop - NHWhite)/TotalPop)
+             HISP= b03002012,
+             pctHISP = HISP/TotalPop)
     
     
-    f.munifull <- inner_join(f.munifull, f.nonwhite[,c(7,31)], by="GEOID")
-    popnames <- c("Percent of Persons of Color" = "pctNonWhite")
+    f.munifull <- inner_join(f.munifull, f.HISP[,c(7,31)], by="GEOID")
+    inName <- paste0("Percent of Hispanic Population (",eYr,")")
+    popnames <- setNames( c("pctHISP"),as.list(inName))
+
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -150,7 +156,9 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
                bapct = baplus/total)
       
       f.munifull <- inner_join(f.munifull, f.educVal[,c(7,35)], by="GEOID")
-      popnames <- c("Percentage of Persons with a Bachelor's Degree or Higher" = "bapct")
+      inName <- paste0("Percentage of Persons with a Bachelor's Degree or Higher (",eYr,")")
+      popnames <- setNames( c("bapct"),as.list(inName))
+  
       colName2 <- c(colName2,popnames)
       incProgress()
   }
@@ -165,7 +173,9 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
       names(f.muniJobs)[3] <- "total_jobs"
     
     f.munifull <- inner_join(f.munifull, f.muniJobs[,c(1,3)], by="GEOID")
-    popnames <- c("Total Estimated Jobs"= "total_jobs")
+    inName <- paste0("Total Estimated Jobs (",eYr,")")
+    popnames <- setNames( c("total_jobs"),as.list(inName))
+
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -187,7 +197,8 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
       mutate(medianinc = b19013001)
     
     f.munifull <- inner_join(f.munifull,f.munimedinc[,c(7,9)],by="GEOID")
-    popnames <- c("Median Household Income"= "medianinc")
+    inName <- paste0("Median Household Income (",eYr,")")
+    popnames <- setNames( c("medianinc"),as.list(inName))
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -211,7 +222,9 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
              povpct = (npoverty/tpop)) 
     
     f.munifull <- inner_join(f.munifull,f.povertypct[,c(7,69)],by="GEOID")
-    popnames <- c("Percent of Persons Below the Poverty Line"= "povpct")
+    inName <- paste0("Percent of Persons Below the Poverty Line (",eYr,")")
+    popnames <- setNames( c("povpct"),as.list(inName))
+    
     colName2 <- c(colName2,popnames)
     incProgress()
   }
@@ -242,9 +255,9 @@ MunicipalRank <- function(DBPool, MuniList, chkList, eYr, ACS) {
   }  
   
   if("pctNW" %in% chkList) {
-    f.munifull$nonwZ <- scale(f.munifull$pctNonWhite)
-    f.munifull$pctNonWhite <- percent(f.munifull$pctNonWhite* 100)
-    f.munifull$aggVal <- f.munifull$aggVal + f.munifull$nonwZ
+    f.munifull$HISPZ <- scale(f.munifull$pctHISP)
+    f.munifull$pctHISP <- percent(f.munifull$pctHISP* 100)
+    f.munifull$aggVal <- f.munifull$aggVal + f.munifull$HISPZ
   }  
   
   if("educ" %in% chkList) {

@@ -9,7 +9,8 @@
 #' @export
 #'
 chkID <- function(lvl,fipslist) {
-  if(lvl == "County Ranking") {
+ 
+  if(lvl == "County Clustering and Ranking") {
     ctyName1 <- ""
     ctyNum1 <- ""
     plNum1 <- ""
@@ -19,7 +20,7 @@ chkID <- function(lvl,fipslist) {
     plNum2 <- ""
     plName2 <- ""
   }
-  if(lvl == "Municipal Ranking") {
+  if(lvl == "Municipal Clustering and Ranking") {
     ctyName1 <- ""
     ctyNum1 <- ""
     plNum1 <- ""
