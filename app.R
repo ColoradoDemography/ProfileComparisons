@@ -2,7 +2,7 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2019 -November 2019
 #' Release Version 0.5 5/21/2019
 
-#setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+setwd("J:/Community Profiles/Shiny Demos/Comparisons")
 
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
@@ -10,8 +10,8 @@ library(readr)
 library(readxl, quietly=TRUE)
 library(scales, quietly=TRUE)
 library(codemogAPI, quietly=TRUE)
-library(codemogProfile, quietly=TRUE)
-library(codemogLib)
+#library(codemogProfile, quietly=TRUE)
+#library(codemogLib)
 library(knitr, quietly=TRUE)
 library(kableExtra, quietly=TRUE)
 library(RPostgreSQL)
@@ -51,6 +51,7 @@ library('config')
 
 source("R/CountyName.R")
 source("R/CountyRank.R")
+source("R/codemog_api.r")
 source("R/MunicipalRank.R")
 source("R/baseIndustries.R")
 source("R/boxContent.R")
@@ -154,7 +155,7 @@ ui <-
                  dashboardSidebar( width = 300,  useShinyjs(), 
                                    # data level Drop down
                                    selectInput("level", "Select Comparison Type" ,
-                                               choices=c("Select a Comparison Type","County Ranking","Municipal Ranking","Regional Summary","Region to County","County to County","Municipality to Municipality")  #Enabled in V1; Need to add 'Municipal Ranking'
+                                               choices=c("Select a Comparison Type","County Clustering and Ranking","Municipal Clustering and Ranking","Regional Summary","Region to County","County to County","Municipality to Municipality")  #Enabled in V1; Need to add 'Municipal Clustering'
                                    ),
                                    selectInput("base", "Select Reference Location" ,choices="", multiple=FALSE),
                                    selectInput("comp","Select Comparison Location(s)" ,choices="Select Items",multiple=TRUE),
@@ -310,7 +311,7 @@ server <- function(input, output, session) {
       outBase <- ""
       outComp <- ""
     }
-    if(input$level == "County Ranking") {  # Added 9/18
+    if(input$level == "County Clustering and Ranking") {  # Added 9/18
       shinyjs::hide("base")
       shinyjs::hide("comp")
 
@@ -319,7 +320,7 @@ server <- function(input, output, session) {
                                            "Average Annual Population Growth Rate" ="popgr",
                                            "Percentage of Population Age 25 to 64" = "pop2564",
                                            "Percentage of Population Age 65 and Older" = "pop65",
-                                           "Percentage of Persons of Color" = "pctNW",
+                                           "Percentage of Hispanic Population" = "pctNW",
                                            "Percentage of Persons with a Bachelor's Degree or Higher" = "educ",
                                            "Total Estimated Jobs"= "jobs",
                                            "Median Household Income"="medinc",
@@ -327,7 +328,7 @@ server <- function(input, output, session) {
                                selected =  c("totpop","popgr","pop2564","pop65",
                                              "pctNW","educ","jobs","medinc","poverty"))
     }
-    if(input$level == "Municipal Ranking") {  # Added 9/18
+    if(input$level == "Municipal Clustering and Ranking") {  # Added 9/18
       outBase <-  RegionList
       updateSelectInput(session, "base", choices = outBase)
       shinyjs::hide("base")
@@ -338,7 +339,7 @@ server <- function(input, output, session) {
                                            "Average Annual Population Growth Rate" ="popgr",
                                            "Percentage of Population Age 25 to 64" = "pop2564",
                                            "Percentage of Population Age 65 and Older" = "pop65",
-                                           "Percentage of Persons of Color" = "pctNW",
+                                           "Percentage of Hispanic Population" = "pctNW",
                                            "Percentage of Persons with a Bachelor's Degree or Higher" = "educ",
                                            "Total Estimated Jobs"= "jobs",
                                            "Median Household Income"="medinc",
@@ -421,11 +422,11 @@ server <- function(input, output, session) {
      }  else {
       withProgress(message = 'Generating Profile', value = 0, {  # Initialize Progress bar
         #Building fipslist
-        if(input$level == "County Ranking")  {
+        if(input$level == "County Clustering and Ranking")  {
           placeName <- input$level
           fipslist <<- ""
           }
-          if(input$level == "Municipal Ranking") {
+          if(input$level == "Municipal Clustering and Ranking") {
               placeName <- input$level 
               fipslist <<- ""
           }
@@ -511,7 +512,7 @@ server <- function(input, output, session) {
         #creating ids and output flags for multiple counties and small places
          idList <- chkID(lvl=input$level,fipslist= fipslist)
         # Ranking output
-        if(input$level == "County Ranking") {
+        if(input$level == "County Clustering and Ranking") {
 
           CountyRank <- CountyRank(DBPool = DOLAPool, CtyList = CountyList, chkList = input$outChk, eYr = curYr, ACS=curACS) 
            
@@ -525,14 +526,16 @@ server <- function(input, output, session) {
                                           autowidth= TRUE,
                                           scrollX = TRUE,
                                           scrollY = TRUE),
-                           rownames = FALSE,caption = "County Rankings.  Click on header to Sort")
+                           rownames = FALSE,caption = "County Ranking.  Click on header to Sort")
           
           CtyRank.info <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tabin each display box.",tags$br(),
+                                 tags$br(), 
+                                 tags$li(tags$a(href="https://drive.google.com/open?id=12byoXIdUUsX2lu3EEwvjTEQ6Swg4LII3","Explanation of Cluster Analysis and Ranking Procedures",target="_blank")),
                                  tags$br(),
                                  "General information is available here:", tags$br(),
                                  tags$ul(
                                    tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
-                                   tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
+                                   tags$li(tags$a(href="https://data.census.gov","U.S. Census Bureau American Community Survey",target="_blank"),
                                            tags$br(),tags$br(),downloadObjUI("ctydata")
                                    )))
           
@@ -540,7 +543,7 @@ server <- function(input, output, session) {
           CtyRank.box1 <- box(width=4,renderCirclepackeR(CirPack))
           CtyRank.box2 <- tabBox(width=12, 
                                tabPanel("Table",DT::dataTableOutput("CtyTabOut")),
-                               tabPanel("Information",CtyRank.info))
+                               tabPanel("Sources and Downloads",CtyRank.info))
                                
           
           
@@ -551,7 +554,7 @@ server <- function(input, output, session) {
           incProgress()
         }
       
-         if(input$level == "Municipal Ranking") {
+         if(input$level == "Municipal Clustering and Ranking") {
            MuniRank <- MunicipalRank(DBPool = DOLAPool, MuniList = PlaceList, chkList = input$outChk, eYr = curYr, ACS=curACS) 
            
            MuniPack <- circlepackeR(MuniRank$outtree, size = "r", color_min = "hsl(56,80%,80%)", 
@@ -562,14 +565,16 @@ server <- function(input, output, session) {
                                                    options = list(pageLength = 9,
                                                                   autowidth= TRUE,
                                                                   scrollX = TRUE,
-                                                                  scrollY = TRUE),rownames = FALSE,caption = "Municipal Rankings.  Click on header to Sort")
+                                                                  scrollY = TRUE),rownames = FALSE,caption = "Municipal Ranking.  Click on header to Sort")
            
            MuniRank.info <- tags$div(class="dInfo","Individual plots and data may be downloaded by selecting the 'Sources and Downloads' tabin each display box.",tags$br(),
-                                    tags$br(),
+                                 tags$br(), 
+                                 tags$li(tags$a(href="https://drive.google.com/open?id=12byoXIdUUsX2lu3EEwvjTEQ6Swg4LII3","Explanation of Cluster Analysis",target="_blank")),
+                                 tags$br(),
                                     "General information is available here:", tags$br(),
                                     tags$ul(
                                       tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
-                                      tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
+                                      tags$li(tags$a(href="https://data.census.gov","U.S. Census Bureau American Community Survey",target="_blank"),
                                               tags$br(),tags$br(),downloadObjUI("munidata")
                                       )))
            
@@ -579,7 +584,7 @@ server <- function(input, output, session) {
              
            MuniRank.box2 <- tabBox(width=12, 
                                   tabPanel("Table",DT::dataTableOutput("MuniTabOut")),
-                                  tabPanel("Information",MuniRank.info))
+                                  tabPanel("Sources and Downloads",MuniRank.info))
            
            
            
@@ -599,12 +604,15 @@ server <- function(input, output, session) {
           
           #Images
           output$statMap <- renderLeaflet(stat_map)
-       
+          
           # Output DT Table
           
           outTab <- stat_List$data
+          outCaption <- stat_List$caption
           
-           output$StatTabOut <- DT::renderDataTable(outTab,
+           output$StatTabOut <- DT::renderDataTable(datatable(outTab, caption=htmltools::tags$caption(
+                      style = 'caption-side: bottom; text-align: left;',
+                      htmltools::em(outCaption))),
                                                    options = list(pageLength = 9,
                                                                   autowidth= TRUE,
                                                                   scrollX = TRUE,
@@ -616,7 +624,7 @@ server <- function(input, output, session) {
                                  "General information is available here:", tags$br(),
                                  tags$ul(
                                    tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
-                                   tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
+                                   tags$li(tags$a(href="https://data.census.gov","U.S. Census Bureau American Community Survey",target="_blank"),
                                            tags$br(),tags$br(),downloadObjUI("statsplot")
                                    )))
           
@@ -625,7 +633,7 @@ server <- function(input, output, session) {
                                  "General information is available here:", tags$br(),
                                  tags$ul(
                                    tags$li(tags$a(href="https://demography.dola.colorado.gov/data/","State Demography Office Data",target="_blank")),
-                                   tags$li(tags$a(href="https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml","U.S. Census Bureau American Community Survey",target="_blank"),
+                                   tags$li(tags$a(href="https://data.census.gov","U.S. Census Bureau American Community Survey",target="_blank"),
                                            tags$br(),tags$br(),downloadObjUI("statstabl")
                                    )))
   
@@ -633,7 +641,7 @@ server <- function(input, output, session) {
           stats.box1 <- box(width=5, height=350,leafletOutput("statMap"))
           stats.box2 <- tabBox(width=12, height=400,
                                tabPanel("Table",DT::dataTableOutput("StatTabOut")),
-                               tabPanel("Information",Stats.info))
+                               tabPanel("Sources and Downloads",Stats.info))
           
           
           
@@ -730,7 +738,7 @@ server <- function(input, output, session) {
                                             description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
                                             MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
                                             urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
-                                                           c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
+                                                           c("data.census.gov, Series B25001, B25003, and B25004","https://data.census.gov")) ),
                                  tags$br(),
                                  downloadObjUI("poph1data"))
           
@@ -738,7 +746,7 @@ server <- function(input, output, session) {
                                             description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
                                             MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
                                             urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
-                                                           c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
+                                                           c("data.census.gov, Series B25001, B25003, and B25004","https://data.census.gov")) ),
                                  tags$br(),
                                  downloadObjUI("poph2data"))
           
@@ -746,7 +754,7 @@ server <- function(input, output, session) {
                                             description= "The Housing Type Plots compare the categories of housing types for a selected place to the State.",
                                             MSA= "F", stats = "T", muni = "F", multiCty = "F", PlFilter = "F", 
                                             urlList = list(c("SDO Housing Time Series","https://demography.dola.colorado.gov/population/data/muni-pop-housing/"),
-                                                           c("American Community Survey American Fact Finder, Series B25001, B25003, and B25004","https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml")) ),
+                                                           c("data.cencus, Series B25001, B25003, and B25004","https://data.census.gov")) ),
                                  tags$br(),
                                  downloadObjUI("poph3data"))
           
@@ -886,9 +894,9 @@ server <- function(input, output, session) {
     
     # Output UI...
     
-   if(input$level == "County Ranking") {
+   if(input$level == "County Clustering and Ranking") {
      tabs <- CtyRank.list
-   } else if (input$level == "Municipal Ranking") {
+   } else if (input$level == "Municipal Clustering and Ranking") {
      tabs <- MuniRank.list
       }   else {
      if(length(outputList) == 0) {
