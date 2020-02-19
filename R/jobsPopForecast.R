@@ -159,7 +159,7 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
     borderwidth = 2)
 
 rollText <- paste0(f.plotfore$county, "<br>", f.plotfore$population_year,": ", format(f.plotfore$totaljobs, scientific=FALSE,big.mark = ","),"<br>",f.plotfore$datatype)
-browser()
+
 jobsplot <-  plot_ly(x=f.plotest$population_year, y=f.plotest$totaljobs, 
                       type="scatter",mode='lines', color=f.plotest$county,
                       transforms = list( type = 'groupby', groups = f.plotest$county),
