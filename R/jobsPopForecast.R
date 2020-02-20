@@ -34,10 +34,10 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
  if(lvl == "Regional Summary") { 
 
   f.jobsind <- data.frame()
-  if(ctyname1 == "Denver PMSA") {
+  if(ctyfips1 %in% PMSA) {
      jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast where countyfips= 500;")
      f.jobsind <- dbGetQuery(DBPool, jobsSQL)
-     f.jobsind$county <- ctyname1 
+     f.jobsind$county <- "Denver PMSA"  # Adding County name
   } else {
       for(i in 1:length(ctyfips1)) {
          jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips1[i]), ";")
@@ -54,15 +54,14 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
 
    #Building regional data
    f.jobsindR <- data.frame()
-  if(ctyname1 == "Denver PMSA") {
+  if(ctyfips1 %in% PMSA) {
      jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast where countyfips = 500;")
      f.jobsindR <- dbGetQuery(DBPool, jobsSQL)
-     f.jobsindR$county <- ctyname1 
+     f.jobsindR$county <- "Denver PMSA"  # Adding County name
   } else {
       for(i in 1:length(ctyfips1)) {
          jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips1[i]), ";")
          f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
-         f.jobsBase$county <- CountyName(paste0("08",ctyfips1[i]))  # Adding County name
          f.jobsindR <- bind_rows(f.jobsindR,f.jobsBase)
       }
     #Summarize record
@@ -72,21 +71,23 @@ jobsPopForecast <- function(DBPool,lvl,listID, curyr, base=10){
     f.jobsindR$county <- ctyname1
     f.jobsindR$countyfips <- 1000
   }
-   
+    browser()  
   
    #Building County data
    
-   ctyfips2 <- ctyfips2[which(!ctyfips2 %in% PMSA )]
-   ctyname2 <- ctyname2[which(!ctyname2 %in% PMSANames)]
-   
    f.jobsindC <- data.frame()
+   if(ctyfips2 %in% PMSA) {
+     jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast where countyfips = 500;")
+     f.jobsindC <- dbGetQuery(DBPool, jobsSQL)
+     f.jobsindC$county <- "Denver PMSA"  # Adding County name
+  } else {
     for(i in 1:length(ctyfips2)) {
          jobsSQL <- paste0("SELECT * FROM estimates.jobs_forecast WHERE countyfips = ",as.numeric(ctyfips2[i]), ";")
          f.jobsBase <- dbGetQuery(DBPool, jobsSQL)
          f.jobsBase$county <- CountyName(paste0("08",ctyfips2[i]))  # Adding County name
          f.jobsindC <- bind_rows(f.jobsindC,f.jobsBase)
       }
-     
+  }
     
     f.jobsind <- bind_rows(f.jobsindR,f.jobsindC)
  
