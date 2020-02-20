@@ -2,7 +2,7 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2019 -November 2019
 #' Release Version 0.5 5/21/2019
 
-#setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+setwd("J:/Community Profiles/Shiny Demos/Comparisons")
 
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
@@ -10,8 +10,8 @@ library(readr)
 library(readxl, quietly=TRUE)
 library(scales, quietly=TRUE)
 library(codemogAPI, quietly=TRUE)
-#library(codemogProfile, quietly=TRUE)
-#library(codemogLib)
+library(codemogProfile, quietly=TRUE)
+library(codemogLib)
 library(knitr, quietly=TRUE)
 library(kableExtra, quietly=TRUE)
 library(RPostgreSQL)
@@ -51,7 +51,6 @@ library('config')
 
 source("R/CountyName.R")
 source("R/CountyRank.R")
-source("R/codemog_api.r")
 source("R/MunicipalRank.R")
 source("R/baseIndustries.R")
 source("R/boxContent.R")
@@ -90,8 +89,8 @@ source("R/unemployment.R")
 # tagManJS <- "/srv/shiny-server/ProfileDashboard2/www/tag_manager.js"
 
 # Current ACS database
-curACS <- "acs1418"
-curYr <- 2018
+curACS <- "acs1317"
+curYr <- 2017
 fipslist <<- ""
 
 # Set up database pool 1/23/19
@@ -202,23 +201,20 @@ ui <-
 # Server Management Function
 server <- function(input, output, session) {
 
-  infoSrc <- matrix(" ",nrow=8,ncol=2)
-  infoSrc[1,1] <- "<b>Basic Statistics</b>"
-  infoSrc[1,2] <- "Summary Table and Map"
-  infoSrc[2,1] <- "<b>Population Trends</b>"
-  infoSrc[2,2] <- "Population Estimates and Forecasts"
-  infoSrc[3,1] <- "<b>Population Characteristics: Age</b>"
-  infoSrc[3,2] <- "Population Estimates and Migration by Age"
-  infoSrc[4,1] <- "<b>Population Characteristics: Income, Education and Race</b>"
-  infoSrc[4,2] <- "Population Estimates by Income, Income Source, Educational Attainment and Race"
-  infoSrc[5,1] <- "<b>Housing and Households</b>"
-  infoSrc[5,2] <- "Housing Units, Costs and Unit Characteristics"
-  infoSrc[6,1] <- "<b>Commuting and Job Growth</b>"
-  infoSrc[6,2] <- "Commuting Patterns and Job Growth and Migration"
-  infoSrc[7,1] <- "<b>Employment by Industry</b>"
-  infoSrc[7,2] <- "Employment Data by Industry"
-  infoSrc[8,1] <- "<b>Employment Forecast and Wage Information</b>"
-  infoSrc[8,2] <- "Employment Forecasts, Wage and Number of Firms"
+  infoSrc <- matrix(" ",nrow=6,ncol=2)   
+  infoSrc[1,1] <- "<b>County Clustering and Ranking</b>"
+  infoSrc[1,2] <- "Clusters and ranks Colorado Counties according to up to nine demographic variables"
+  infoSrc[2,1] <- "<b>Municipal Custering and Ranking</b>"
+  infoSrc[2,2] <- "Clusters and ranks Colorado Counties according to up to nine demographic variables"
+  infoSrc[3,1] <- "<b>Regional Summary</b>"
+  infoSrc[3,2] <- "Outputs statistics for pre-defined county regions.  Regional definitions include the 5 regions used on the State Demography Office dashboards and the 14 Colorado Planning and Management Regions"
+  infoSrc[4,1] <- "<b>Region to County Comparison</b>"
+  infoSrc[4,2] <- "Compares a selected region to indivdual counties according to up to five demographic variables."
+  infoSrc[5,1] <- "<b>County to County Comparison</b>"
+  infoSrc[5,2] <- "Compares counties according to up to five demographic variables."
+  infoSrc[6,1] <- "<b>Municipality to Municipality Comparison</b>"
+  infoSrc[6,2] <- "Compares municipalities according to up to five demographic variables."
+  
   
   infoTab <-  kable(infoSrc, format='html', table.attr='class="cleanTab"',align='l',linesep = "") %>%
     kable_styling(bootstrap_options ="condensed", full_width = F) %>%
@@ -226,57 +222,15 @@ server <- function(input, output, session) {
   infoTab <- gsub("&lt;","<",infoTab)
   infoTab <- gsub("&gt;",">",infoTab)
   
-  #Creating data Source Links Table
-  linkSrc <- matrix(" ", nrow=6, ncol=5)
-  linkSrc[1,1]  <- "<b>Data Dashboard</b>"
-  linkSrc[2,1]  <- "<a href='https://gis.dola.colorado.gov/apps/demographic_dashboard/' target='_blank'>Demographic Dashboard</a>"
-  linkSrc[3,1]  <- "<a href='https://gis.dola.colorado.gov/apps/netmigration_dashboard/' target='_blank'>Net Migration Dashboard</a>"
-  
-  linkSrc[4,1] <- "<b>Data Lookup Pages</b>"
-  linkSrc[5,1] <- "<a href='https://demography.dola.colorado.gov/population/data/profile-county/' target='_blank'>County Data Lookup</a>"
-  linkSrc[6,1] <- "<a href='https://demography.dola.colorado.gov/population/data/profile-regions/' target='_blank'>Regional Data Lookup</a>"
-  
-  linkSrc[1,2]  <- "<b>Maps and GIS data</b>" 
-  linkSrc[2,2]  <- "<a href='https://demography.dola.colorado.gov/gis/map-gallery/' target='_blank'>Interactive Map Gallery</a>"
-  linkSrc[3,2]  <- "<a href='https://demography.dola.colorado.gov/gis/thematic-maps/#thematic-maps' target='_blank'>Thematic Maps</a>"
-  linkSrc[4,2]  <- "<a href='https://demography.dola.colorado.gov/demography/region-reports-2014/#colorado-planning-region-reports' target='_blank'>Region Reports</a>"
-  linkSrc[5,2] <- "<a href='https://demography.dola.colorado.gov/gis/gis-data/#gis-data' target='_blank'>GIS Data Downloads</a>"
-  linkSrc[6,2] <- "<a href='https://demography.dola.colorado.gov/gis/gis-data/#gis-data' target='_blank'>Links to GIS Data and DOLA Grants</a>"
   
   
-  linkSrc[1,3]  <- "<b>Population Data</b>"
-  linkSrc[2,3]  <- "<a href='https://demography.dola.colorado.gov/population/' target='_blank'>Population Estimates and Forecasts</a>"
-  linkSrc[3,3]  <- "<a href='https://demography.dola.colorado.gov/births-deaths-migration/' target='_blank'>Births Deaths and Migration</a>"
-  linkSrc[4,3]  <- "<a href='https://demography.dola.colorado.gov/economy-labor-force/' target='_blank'>Economy and Labor Force</a>"
-  linkSrc[5,3]  <- "<a href='https://demography.dola.colorado.gov/housing-and-households/' target='_blank','>Housing and Households</a>"
-  
-  linkSrc[1,4] <- "<b>Census and ACS Data</b>"
-  linkSrc[2,4] <- "<a href='https://demography.dola.colorado.gov/data/#census-data-tools' target='_blank'>Census Data Tools</a>"
-  linkSrc[3,4] <- "<a href='https://demography.dola.colorado.gov/census-acs/' target='_blank'>Census Data Page</a>"
-  linkSrc[1,5]  <- "<b>Publications</b>"
-  linkSrc[2,5]  <- "<a href='https://demography.dola.colorado.gov/demography/publications-and-presentations/#publications-and-presentations' target='_blank'>Publications and Reports</a>"
-  linkSrc[3,5]  <- "<a href='https://demography.dola.colorado.gov/crosstabs/' target='_blank'>Crosstabs</a>"
-  linkSrc[4,5]  <- "<a href='https://demography.dola.colorado.gov/demography/publications-and-presentations/#annual-demography-summit-2017' target='_blank'>Annual Summit</a>"
-  
-  
-  linkTab <-  kable(linkSrc, format='html', table.attr='class="cleanTab"',align='l',linesep = "") %>%
-    kable_styling(bootstrap_options ="condensed") %>%
-    column_spec(1, width = "2.25in") %>%
-    column_spec(2, width = "2.25in") %>%
-    column_spec(3, width = "2.25in") %>%
-    column_spec(4, width = "2.25in") %>%
-    column_spec(5, width = "2.25in")
-  
-  linkTab <- gsub("&lt;","<",linkTab)
-  linkTab <- gsub("&gt;",">",linkTab)
-  
-  frontPgBox1 <- box(width=11,tags$div(tags$b("Welcome to the State Demography Office (SDO) Colorado Demographic Profiles Comparisons Website"), tags$br(),
-                                       "This tool provides summary plots and data describing Counties and Incorporated Municipalities in Colorado.", tags$br(),
+  frontPgBox1 <- box(width=11,tags$div(tags$b("Welcome to the State Demography Office (SDO) Colorado Demographic Profiles ComparisonsDashboard"), tags$br(), tags$br(),
+                                       "This tool provides plots and statisics for summarizing regions, comparing counites to regions, comparing counties, and compariong municipalities.", tags$br(),
                                        tags$em("Profile Contents:"),
                                        HTML(infoTab),
                                        "To create a profile:",tags$br(),
                                        tags$ul(
-                                         tags$li("Select a Data Level and Location using the dropdown boxes."),
+                                         tags$li("Select a Comparison type and Location(s) using the dropdown boxes."),
                                          tags$li("Select specific Data Elements to display using the checkboxes."),
                                          tags$li("Click on the 'View Profile' button to display the selected profile.")
                                        ), 
@@ -284,26 +238,25 @@ server <- function(input, output, session) {
                                        panel of each display box.", tags$br(),
                                        tags$em(tags$b("Notes:")), tags$br(), 
                                        tags$ul(
-                                         tags$li("Profiles are available for Counties and Incorporated Municipalites.  
+                                         tags$li("Profiles are available for Regions, Counties and Municipalites.  
                                                  Please contact SDO for information on other geographies and places."),
                                          tags$li("Producing the requested outputs may take up to 3 minutes, depending on your request and your connection speed."),
                                          tags$li("Downloading any report, plot or data object will open a new browser window while the 
                                                  object is being processed and downloaded.  This window will close once the object processing is completed."),
                                          tags$li("Downloaded objects will be saved in the 'Download' location supported by your browser.")
                                          )))
-  frontPgBox2 <-  box(width=11, tags$div(
-    tags$b("Links to other SDO Data Sources:"),
-    HTML(linkTab)))
   
-  frontPg <- list(frontPgBox1,frontPgBox2)
+  frontPg <- list(frontPgBox1)
   
- # output$ui <- renderUI(frontPg)
+  output$ui <- renderUI(frontPg)
 
   # updates Dropdown boxes and selects data level and unit
   LocList <- popPlace(DOLAPool,curYr)
   CountyList <- LocList$Counties
   PlaceList <- LocList$Munis
   RegionList <- LocList$Region
+    shinyjs::hide("base")
+      shinyjs::hide("comp")
   
   observeEvent(input$level, ({
     
