@@ -33,16 +33,12 @@ library(ggplotify)
 library(ggrepel)  # These are the new packages
 library(leaflet)
 library(htmltools)
-#library(mapview)
 library(DT)
 library(WeightedCluster)
 library(data.tree)
 library(circlepackeR)
 library(htmlwidgets)
 library(plotly)
-library(profvis)
-
-
 
 # Additions for Database pool
 library('pool') 
