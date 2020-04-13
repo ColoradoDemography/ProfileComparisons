@@ -2,7 +2,7 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2019 -November 2019
 #' Release Version 0.5 5/21/2019
 
-setwd("C:/Users/abickford/Documents/Shiny Demos/Comparisons")
+#setwd("C:/Users/abickford/Documents/Shiny Demos/Comparisons")
 
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
