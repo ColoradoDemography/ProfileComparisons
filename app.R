@@ -2,7 +2,7 @@
 #' @author  Adam Bickford, Colorado State Demography Office, March 2019 -November 2019
 #' Release Version 0.5 5/21/2019
 
-#setwd("J:/Community Profiles/Shiny Demos/Comparisons")
+setwd("C:/Users/abickford/Documents/Shiny Demos/Comparisons")
 
 rm(list = ls())
 library(tidyverse, quietly=TRUE)
@@ -33,13 +33,14 @@ library(ggplotify)
 library(ggrepel)  # These are the new packages
 library(leaflet)
 library(htmltools)
-library(mapview)
+#library(mapview)
 library(DT)
 library(WeightedCluster)
 library(data.tree)
 library(circlepackeR)
 library(htmlwidgets)
 library(plotly)
+library(profvis)
 
 
 
@@ -200,7 +201,7 @@ ui <-
 
 # Server Management Function
 server <- function(input, output, session) {
-
+  
   infoSrc <- matrix(" ",nrow=6,ncol=2)   
   infoSrc[1,1] <- "<b>County Clustering and Ranking</b>"
   infoSrc[1,2] <- "Clusters and ranks Colorado Counties according to up to nine demographic variables"
@@ -602,7 +603,8 @@ server <- function(input, output, session) {
           stats.list <<- list(stats.box0, stats.box1, stats.box2)
           
           incProgress()
-        }
+          }
+        
         # Population Forecasts
         
         if("popf" %in% input$outChk){
@@ -911,9 +913,10 @@ server <- function(input, output, session) {
   }) #observeEvent input$profile
   
   
-  
 }  #server
 
 
 
 shinyApp(ui = ui, server = server)
+
+
